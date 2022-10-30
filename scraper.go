@@ -100,13 +100,13 @@ func MakeCollector() *colly.Collector {
 	)
 
 	// On every a element which has href attribute call callback
-	c.OnHTML("a[href]", func(e *colly.HTMLElement) {
-		link := e.Attr("href")
-		if link != "#" {
-			// Visit link found on page
-			e.Request.Visit(e.Request.AbsoluteURL(link))
-		}
-	})
+	//c.OnHTML("a[href]", func(e *colly.HTMLElement) {
+	//	link := e.Attr("href")
+	//	if link != "#" {
+	//		// Visit link found on page
+	//		e.Request.Visit(e.Request.AbsoluteURL(link))
+	//	}
+	//})
 
 	c.OnRequest(func(request *colly.Request) {
 		log.Println("Visiting", request.URL)
@@ -121,6 +121,10 @@ func MakeCollector() *colly.Collector {
 		parsedDoc := ParseDocument(rootNode)
 		parsedDoc.URL = response.Request.URL.String()
 		log.Printf("Parsed: %#v\n", parsedDoc)
+	})
+
+	c.OnError(func(response *colly.Response, err error) {
+		log.Printf("error on scraping url %s: %s\n", response.Request.URL, err)
 	})
 
 	return c
