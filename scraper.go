@@ -127,6 +127,7 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 		// is visited, and no further links are followed
 		colly.MaxDepth(1),
 		colly.Async(true),
+		colly.AllowURLRevisit(),
 	)
 
 	// On every a element which has href attribute call callback

@@ -4,6 +4,9 @@ import (
 	"fmt"
 	"github.com/meilisearch/meilisearch-go"
 	"log"
+	"os"
+	"os/exec"
+	"syscall"
 )
 
 const IndexName = "sites"
@@ -41,4 +44,38 @@ func MakeMeilisearchIndex(host, apiKey string) *meilisearch.Index {
 		APIKey: apiKey,
 	})
 	return c.Index(IndexName)
+}
+
+type SearchProcessManager struct {
+	cmd *exec.Cmd
+}
+
+func NewSearchProcessManager(cmdPath, dbPath, addr, env string) SearchProcessManager {
+	return SearchProcessManager{
+		cmd: exec.Command(cmdPath,
+			"--db-path", dbPath,
+			"--http-addr", addr,
+			fmt.Sprintf("--env=%s", env),
+		),
+	}
+}
+
+func (s *SearchProcessManager) Start() error {
+	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
+	s.cmd.Stdout = os.Stdout
+	s.cmd.Stderr = os.Stderr
+	return s.cmd.Start()
+}
+
+func (s *SearchProcessManager) Stop() error {
+	// check if the search index is doing any task, then interrupt
+	pgid, err := syscall.Getpgid(s.cmd.Process.Pid)
+	if err != nil {
+		return err
+	}
+	return syscall.Kill(-pgid, syscall.SIGINT)
+}
+
+func (s *SearchProcessManager) Wait() error {
+	return s.cmd.Wait()
 }
