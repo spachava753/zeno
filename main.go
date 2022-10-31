@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-const IdleTimeout = 30 * time.Second
+const IdleTimeout = 5 * time.Minute
 
 func main() {
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
