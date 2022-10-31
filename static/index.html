@@ -34,7 +34,7 @@
     const search = instantsearch({
       indexName: "sites",
       searchClient: instantMeiliSearch(
-        "http://localhost:8080"
+        window.location.href
       )
       });
       search.addWidgets([
