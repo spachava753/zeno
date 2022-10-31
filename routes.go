@@ -1,12 +1,11 @@
 package main
 
 import (
-	"github.com/gocolly/colly"
 	"net/http"
 	"net/url"
 )
 
-func MakeRoutes(c *colly.Collector, mux *http.ServeMux) {
+func MakeRoutes(s Scraper, mux *http.ServeMux) {
 	mux.HandleFunc("/scrape", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -22,7 +21,7 @@ func MakeRoutes(c *colly.Collector, mux *http.ServeMux) {
 			return
 		}
 
-		if visitErr := c.Visit(parsedUrl.String()); visitErr != nil {
+		if visitErr := s.Scrape(parsedUrl.String()); visitErr != nil {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte(visitErr.Error()))
 			return

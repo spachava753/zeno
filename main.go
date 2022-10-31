@@ -20,9 +20,11 @@ func main() {
 	defer ticker.Stop()
 
 	mux := http.NewServeMux()
-	c := MakeCollector()
+	index := MakeMeilisearchIndex("http://127.0.0.1:7700", "")
+	m := NewMeilisearchIndexer(index)
+	s := NewCollyScraper(m)
 
-	MakeRoutes(c, mux)
+	MakeRoutes(s, mux)
 
 	srv := http.Server{Addr: ":8080", Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
@@ -45,7 +47,7 @@ func main() {
 		if err := srv.Shutdown(context.Background()); err != nil {
 			log.Printf("HTTP server Shutdown: %v\n", err)
 		}
-		c.Wait()
+		s.C.Wait()
 	}()
 
 	log.Println("Starting HTTP server")

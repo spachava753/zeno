@@ -27,7 +27,7 @@
 <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
 <script>
     const search = instantsearch({
-      indexName: "movies",
+      indexName: "sites",
       searchClient: instantMeiliSearch(
         "http://localhost:7700"
       )
@@ -57,7 +57,7 @@
             {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
             </h2>
             <p>
-            {{#helpers.highlight}}{ "attribute": "overview" }{{/helpers.highlight}}
+            {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
             </p>
             </div>
           `

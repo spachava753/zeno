@@ -2,17 +2,47 @@ package main
 
 import (
 	"bytes"
+	"encoding/base64"
 	"github.com/gocolly/colly"
 	"golang.org/x/net/html"
 	"log"
+	"net/url"
 	"strings"
 )
 
 type ScrapedDoc struct {
-	Title       string
-	Description string
-	Content     string
-	URL         string
+	Title       string `json:"title"`
+	Description string `json:"description"`
+	Content     string `json:"content"`
+	URL         string `json:"url"`
+	ID          string `json:"id"`
+}
+
+type Scraper interface {
+	Scrape(urlStr string) error
+}
+
+type CollyScraper struct {
+	indexer Indexer
+	C       *colly.Collector
+}
+
+func NewCollyScraper(indexer Indexer) CollyScraper {
+	if indexer == nil {
+		panic("indexer cannot be nil")
+	}
+	return CollyScraper{
+		indexer: indexer,
+		C:       MakeCollector(indexer),
+	}
+}
+
+func (c CollyScraper) Scrape(urlStr string) error {
+	parsedUrl, err := url.Parse(urlStr)
+	if err != nil {
+		return err
+	}
+	return c.C.Visit(parsedUrl.String())
 }
 
 const roleKey = "role"
@@ -90,7 +120,7 @@ func ParseDocument(root *html.Node) ScrapedDoc {
 	return s
 }
 
-func MakeCollector() *colly.Collector {
+func MakeCollector(indexer Indexer) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page
@@ -120,7 +150,18 @@ func MakeCollector() *colly.Collector {
 		}
 		parsedDoc := ParseDocument(rootNode)
 		parsedDoc.URL = response.Request.URL.String()
+		var sb strings.Builder
+		encoder := base64.NewEncoder(base64.StdEncoding, &sb)
+		if _, encodingErr := encoder.Write([]byte(parsedDoc.URL)); encodingErr != nil {
+			log.Println("could not set ID for parsed document:", encodingErr)
+			return
+		}
+		parsedDoc.ID = sb.String()
 		log.Printf("Parsed: %#v\n", parsedDoc)
+		if indexErr := indexer.Index(parsedDoc); indexErr != nil {
+			log.Println("could not index document:", indexErr)
+			return
+		}
 	})
 
 	c.OnError(func(response *colly.Response, err error) {
