@@ -33,8 +33,7 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 			return
 		}
 
-		writer.WriteHeader(http.StatusAccepted)
-		http.ServeFile(writer, request, "./static/scraped.html")
+		http.Redirect(writer, request, "/", http.StatusFound)
 	})
 
 	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
