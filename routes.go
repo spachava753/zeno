@@ -1,11 +1,17 @@
 package main
 
 import (
+	"fmt"
 	"net/http"
+	"net/http/httputil"
 	"net/url"
 )
 
+const SearchUrl = "http://localhost:7700"
+
 func MakeRoutes(s Scraper, mux *http.ServeMux) {
+	searchUrl, _ := url.Parse(SearchUrl)
+	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	mux.HandleFunc("/scrape", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -33,5 +39,10 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 
 	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
 		http.ServeFile(writer, request, "./static/index.html")
+	})
+
+	// this function will proxy search requests so that
+	mux.HandleFunc(fmt.Sprintf("/indexes/%s/search", IndexName), func(writer http.ResponseWriter, request *http.Request) {
+		rp.ServeHTTP(writer, request)
 	})
 }
