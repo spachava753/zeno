@@ -7,8 +7,6 @@ import (
 	"net/url"
 )
 
-const SearchUrl = "http://localhost:7700"
-
 func MakeRoutes(s Scraper, mux *http.ServeMux) {
 	searchUrl, _ := url.Parse(SearchUrl)
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)

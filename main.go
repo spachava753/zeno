@@ -20,7 +20,7 @@ func main() {
 	defer ticker.Stop()
 
 	mux := http.NewServeMux()
-	index := MakeMeilisearchIndex("http://127.0.0.1:7700", "")
+	index := MakeMeilisearchIndex(SearchUrl, "")
 	m := NewMeilisearchIndexer(index)
 	s := NewCollyScraper(m)
 

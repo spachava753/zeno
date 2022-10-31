@@ -7,6 +7,7 @@ import (
 )
 
 const IndexName = "sites"
+const SearchUrl = "http://localhost:7700"
 
 type Indexer interface {
 	Index(doc ScrapedDoc) error
