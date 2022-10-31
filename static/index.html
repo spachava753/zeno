@@ -33,6 +33,10 @@
       )
       });
       search.addWidgets([
+        instantsearch.widgets.configure({
+            hitsPerPage: 10,
+            attributesToSnippet: ['content'],
+        }),
         instantsearch.widgets.searchBox({
           container: "#searchbox",
           showSubmit: false,
@@ -47,17 +51,24 @@
             ],
           }
         }),
-        instantsearch.widgets.configure({ hitsPerPage: 10 }),
         instantsearch.widgets.infiniteHits({
           container: "#hits",
+          cssClasses: {
+            list: [
+                'ps-0',
+            ],
+          },
           templates: {
           item: `
-            <div>
-            <h2>
+            <div class="border-bottom border-dark mb-4 p-2">
+            <h4>
             {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
-            </h2>
-            <p>
+            </h4>
+            <a href="{{ url }}">
             {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
+            </a>
+            <p>
+            {{#helpers.snippet}}{ "attribute": "content" }{{/helpers.snippet}}
             </p>
             </div>
           `
