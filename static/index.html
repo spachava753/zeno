@@ -7,8 +7,8 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
           integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <style>
-        li.ais-InfiniteHits-item::marker {
-            content: none;
+        ol.ais-InfiniteHits-list {
+            list-style-type: none;
         }
     </style>
 </head>
@@ -61,18 +61,25 @@
           cssClasses: {
             list: [
                 'ps-0',
+                'list-group',
+                'list-group-flush',
+            ],
+            item: [
+                'list-group-item',
+                'mb-2',
             ],
             loadMore: [
                 'btn',
                 'btn-primary',
+                'mt-0',
             ],
           },
           templates: {
           item: `
-            <div class="border-bottom border-dark mb-4 p-2">
-            <h4>
+            <div>
+            <p class='fw-semibold mb-0'>
             {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
-            </h4>
+            </p>
             <a href="{{ url }}" target="_blank">
             {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
             </a>
@@ -85,6 +92,7 @@
         })
       ]);
       search.start();
-  </script>
+
+</script>
 </body>
 </html>
