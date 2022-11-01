@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"flag"
 	"log"
 	"net/http"
 	"os"
@@ -12,6 +13,34 @@ import (
 const IdleTimeout = 5 * time.Minute
 
 func main() {
+	var searchPath, dbPath, addr, searchEnv string
+	flag.StringVar(
+		&searchPath,
+		"cmd",
+		"./meilisearch",
+		"Where the search binary is located",
+	)
+	flag.StringVar(
+		&dbPath,
+		"dbpath",
+		"./meili_data",
+		"Where the search binary will store data",
+	)
+	flag.StringVar(
+		&addr,
+		"addr",
+		"127.0.0.1:7700",
+		"Where the search binary is located",
+	)
+	flag.StringVar(
+		&searchEnv,
+		"env",
+		"development",
+		"Search binary environment",
+	)
+
+	flag.Parse()
+
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, os.Kill)
@@ -20,10 +49,10 @@ func main() {
 	defer ticker.Stop()
 
 	spm := NewSearchProcessManager(
-		"/home/shashank/working/dev/scrap/meilisearch",
-		"/home/shashank/working/dev/scrap/meili_data",
-		"127.0.0.1:7700",
-		"development",
+		searchPath,
+		dbPath,
+		addr,
+		searchEnv,
 	)
 	if err := spm.Start(); err != nil {
 		log.Println("could not start search:", err)
@@ -60,7 +89,7 @@ func main() {
 	case s := <-sigChan:
 		log.Printf("signal recieved: %s", s)
 	case <-ticker.C:
-		log.Println("idle timeout")
+		log.Println("idle timeout after", IdleTimeout)
 	}
 	// shutdown the server
 	log.Println("shutting down server")
