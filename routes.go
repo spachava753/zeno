@@ -1,11 +1,16 @@
 package main
 
 import (
+	"embed"
 	"fmt"
+	"io/fs"
 	"net/http"
 	"net/http/httputil"
 	"net/url"
 )
+
+//go:embed static/index.html
+var f embed.FS
 
 func MakeRoutes(s Scraper, mux *http.ServeMux) {
 	searchUrl, _ := url.Parse(SearchUrl)
@@ -34,9 +39,12 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 		http.Redirect(writer, request, "/", http.StatusFound)
 	})
 
-	mux.HandleFunc("/", func(writer http.ResponseWriter, request *http.Request) {
-		http.ServeFile(writer, request, "./static/index.html")
-	})
+	httpFs, err := fs.Sub(f, "static")
+	if err != nil {
+		panic("cannot serve index")
+	}
+
+	mux.Handle("/", http.FileServer(http.FS(httpFs)))
 
 	// this function will proxy search requests so that
 	mux.HandleFunc(fmt.Sprintf("/indexes/%s/search", IndexName), func(writer http.ResponseWriter, request *http.Request) {

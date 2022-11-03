@@ -11,6 +11,7 @@ WORKDIR /app
 
 COPY go.mod ./
 COPY go.sum ./
+COPY static ./static
 
 RUN go mod download
 
@@ -24,9 +25,8 @@ WORKDIR /
 
 COPY --from=downloader /meilisearch-linux-amd64 /meilisearch
 COPY --from=builder /zeno .
-COPY static ./static
 
 EXPOSE 8080
 
 ENTRYPOINT ["/zeno"]
-
+CMD ["--dbpath", "/meili_data/data"]
