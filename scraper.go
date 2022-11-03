@@ -3,19 +3,28 @@ package main
 import (
 	"bytes"
 	"encoding/base64"
+	"encoding/json"
 	"github.com/gocolly/colly"
 	"golang.org/x/net/html"
 	"log"
 	"net/url"
 	"strings"
+	"time"
 )
 
+type Timestamp time.Time
+
+func (t Timestamp) MarshalJSON() ([]byte, error) {
+	tt := time.Time(t)
+	return json.Marshal(tt.Unix())
+}
+
 type ScrapedDoc struct {
-	Title       string `json:"title"`
-	Description string `json:"description"`
-	Content     string `json:"content"`
-	URL         string `json:"url"`
-	ID          string `json:"id"`
+	Title      string    `json:"title"`
+	Content    string    `json:"content"`
+	URL        string    `json:"url"`
+	ID         string    `json:"id"`
+	ParsedDate Timestamp `json:"parsed_date"`
 }
 
 type Scraper interface {
@@ -108,15 +117,11 @@ func parseTitle(root *html.Node) string {
 	return ""
 }
 
-func parseDescription(root *html.Node) string {
-	return ""
-}
-
 func ParseDocument(root *html.Node) ScrapedDoc {
 	var s ScrapedDoc
 	s.Content = parseContent(root)
 	s.Title = parseTitle(root)
-	s.Description = parseDescription(root)
+	s.ParsedDate = Timestamp(time.Now())
 	return s
 }
 

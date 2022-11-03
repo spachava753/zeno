@@ -2,10 +2,8 @@ package main
 
 import (
 	"embed"
-	"fmt"
 	"io/fs"
 	"net/http"
-	"net/http/httputil"
 	"net/url"
 )
 
@@ -13,8 +11,6 @@ import (
 var f embed.FS
 
 func MakeRoutes(s Scraper, mux *http.ServeMux) {
-	searchUrl, _ := url.Parse(SearchUrl)
-	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	mux.HandleFunc("/scrape", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -45,9 +41,4 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 	}
 
 	mux.Handle("/", http.FileServer(http.FS(httpFs)))
-
-	// this function will proxy search requests so that
-	mux.HandleFunc(fmt.Sprintf("/indexes/%s/search", IndexName), func(writer http.ResponseWriter, request *http.Request) {
-		rp.ServeHTTP(writer, request)
-	})
 }

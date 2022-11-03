@@ -5,8 +5,11 @@ import (
 	"flag"
 	"log"
 	"net/http"
+	"net/http/httputil"
+	"net/url"
 	"os"
 	"os/signal"
+	"strings"
 )
 
 func main() {
@@ -27,7 +30,7 @@ func main() {
 		&addr,
 		"addr",
 		"127.0.0.1:7700",
-		"Where the search binary is located",
+		"Where the search binary will listen on",
 	)
 	flag.StringVar(
 		&searchEnv,
@@ -60,11 +63,20 @@ func main() {
 
 	MakeRoutes(scraper, mux)
 
+	searchUrl, _ := url.Parse(SearchUrl)
+	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	srv := http.Server{Addr: ":8080", Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
 		log.Printf("url: %s, method: %s", request.URL, request.Method)
 
-		mux.ServeHTTP(writer, request)
+		// if the request was '/' or '/scrape', serve
+		if strings.HasPrefix(request.URL.RequestURI(), "/scrape") ||
+			request.URL.RequestURI() == "/" {
+			mux.ServeHTTP(writer, request)
+		} else {
+			// otherwise proxy request to search
+			rp.ServeHTTP(writer, request)
+		}
 	})}
 
 	// start http server
