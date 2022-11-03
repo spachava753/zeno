@@ -7,10 +7,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
-	"time"
 )
-
-const IdleTimeout = 5 * time.Minute
 
 func main() {
 	var searchPath, dbPath, addr, searchEnv string
@@ -45,9 +42,6 @@ func main() {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, os.Kill)
 
-	ticker := time.NewTicker(IdleTimeout)
-	defer ticker.Stop()
-
 	spm := NewSearchProcessManager(
 		searchPath,
 		dbPath,
@@ -70,8 +64,6 @@ func main() {
 		// log request
 		log.Printf("url: %s, method: %s", request.URL, request.Method)
 
-		ticker.Reset(IdleTimeout)
-
 		mux.ServeHTTP(writer, request)
 	})}
 
@@ -85,12 +77,9 @@ func main() {
 		}
 	}()
 
-	select {
-	case s := <-sigChan:
-		log.Printf("signal recieved: %s", s)
-	case <-ticker.C:
-		log.Println("idle timeout after", IdleTimeout)
-	}
+	s := <-sigChan
+	log.Printf("signal recieved: %s", s)
+
 	// shutdown the server
 	log.Println("shutting down server")
 	if err := srv.Shutdown(context.Background()); err != nil {
