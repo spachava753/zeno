@@ -32,7 +32,7 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 			return
 		}
 
-		http.Redirect(writer, request, "/", http.StatusFound)
+		writer.WriteHeader(http.StatusAccepted)
 	})
 
 	httpFs, err := fs.Sub(f, "static")

@@ -11,6 +11,7 @@ import (
 
 const IndexName = "sites"
 const SearchUrl = "http://localhost:7700"
+const ZenoKeyEnv = "ZENO_KEY"
 
 type Indexer interface {
 	Index(doc ScrapedDoc) error
@@ -50,13 +51,19 @@ type SearchProcessManager struct {
 	cmd *exec.Cmd
 }
 
-func NewSearchProcessManager(cmdPath, dbPath, addr, env string) SearchProcessManager {
+func NewSearchProcessManager(cmdPath, dbPath, addr, apiKey string) SearchProcessManager {
+	cmd := exec.Command(cmdPath,
+		"--db-path", dbPath,
+		"--http-addr", addr)
+	if apiKey != "" {
+		log.Println("using production env for search")
+		cmd.Args = append(cmd.Args, "--env=production", "--master-key", apiKey)
+	} else {
+		log.Println("using development env for search")
+		cmd.Args = append(cmd.Args, "--env=development")
+	}
 	return SearchProcessManager{
-		cmd: exec.Command(cmdPath,
-			"--db-path", dbPath,
-			"--http-addr", addr,
-			fmt.Sprintf("--env=%s", env),
-		),
+		cmd: cmd,
 	}
 }
 

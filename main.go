@@ -13,7 +13,7 @@ import (
 )
 
 func main() {
-	var searchPath, dbPath, addr, searchEnv string
+	var searchPath, dbPath, addr string
 	flag.StringVar(
 		&searchPath,
 		"cmd",
@@ -32,12 +32,6 @@ func main() {
 		"127.0.0.1:7700",
 		"Where the search binary will listen on",
 	)
-	flag.StringVar(
-		&searchEnv,
-		"env",
-		"development",
-		"Search binary environment",
-	)
 
 	flag.Parse()
 
@@ -45,11 +39,12 @@ func main() {
 	sigChan := make(chan os.Signal)
 	signal.Notify(sigChan, os.Interrupt, os.Kill)
 
+	apiKey := os.Getenv(ZenoKeyEnv)
 	spm := NewSearchProcessManager(
 		searchPath,
 		dbPath,
 		addr,
-		searchEnv,
+		apiKey,
 	)
 	if err := spm.Start(); err != nil {
 		log.Println("could not start search:", err)
@@ -57,7 +52,7 @@ func main() {
 	}
 	log.Println("started search server")
 	mux := http.NewServeMux()
-	index := MakeMeilisearchIndex(SearchUrl, "")
+	index := MakeMeilisearchIndex(SearchUrl, apiKey)
 	indexer := NewMeilisearchIndexer(index)
 	scraper := NewCollyScraper(indexer)
 

@@ -14,11 +14,27 @@
 </head>
 <body class="mx-4 mt-2">
 <h1>Zeno Scraper</h1>
+<!-- Modal -->
+<div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter the API Key</p>
+                <input type="password" id="apiKey" name="apiKey">
+            </div>
+            <div class="modal-footer">
+                <button id="apiKeyBtn" type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
+            </div>
+        </div>
+    </div>
+</div>
 <div class="mb-3">
-    <form action="/scrape" method="get">
-        <label for="urlInput" class="form-label fs-3">Scrape URL</label>
-        <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net" name="url">
-    </form>
+    <label for="urlInput" class="form-label fs-3">Scrape URL</label>
+    <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net" name="url">
 </div>
 <hr/>
 <div class="wrapper pb-4">
@@ -31,67 +47,101 @@
 <script src="https://cdn.jsdelivr.net/npm/@meilisearch/instant-meilisearch/dist/instant-meilisearch.umd.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
 <script>
-    const search = instantsearch({
-      indexName: "sites",
-      searchClient: instantMeiliSearch(
-        window.location.href
-      )
-      });
-      search.addWidgets([
-        instantsearch.widgets.configure({
-            hitsPerPage: 10,
-            attributesToSnippet: ['content:50'],
-        }),
-        instantsearch.widgets.searchBox({
-          container: "#searchbox",
-          showSubmit: false,
-          showReset: false,
-          cssClasses: {
-            root: [
-              'w-100',
-              'mb-2',
-            ],
-            input: [
-              'form-control',
-            ],
-          }
-        }),
-        instantsearch.widgets.infiniteHits({
-          container: "#hits",
-          cssClasses: {
-            list: [
-                'ps-0',
-                'list-group',
-                'list-group-flush',
-            ],
-            item: [
-                'list-group-item',
-                'mb-2',
-            ],
-            loadMore: [
-                'btn',
-                'btn-primary',
-                'mt-0',
-            ],
-          },
-          templates: {
-          item: `
-            <div>
-            <p class='fw-semibold mb-0'>
-            {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
-            </p>
-            <a href="{{ url }}" target="_blank">
-            {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
-            </a>
-            <p>
-            {{#helpers.snippet}}{ "attribute": "content" }{{/helpers.snippet}}
-            </p>
-            </div>
-          `
-          }
-        })
-      ]);
-      search.start();
+    const myModal = new bootstrap.Modal('#exampleModal', {
+        keyboard: false,
+        backdrop: 'static'
+    });
+    myModal.show();
+    let apiKey = "";
+    document.getElementById("apiKeyBtn").addEventListener("click", (e) => {
+        console.log(`modal closed`);
+        apiKey = document.getElementById("apiKey").value;
+        console.log(`ApiKey: ${apiKey}`);
+        const search = instantsearch({
+          indexName: "sites",
+          searchClient: instantMeiliSearch(
+            window.location.href,
+            apiKey,
+          )
+          });
+          search.addWidgets([
+            instantsearch.widgets.configure({
+                hitsPerPage: 10,
+                attributesToSnippet: ['content:50'],
+            }),
+            instantsearch.widgets.searchBox({
+              container: "#searchbox",
+              showSubmit: false,
+              showReset: false,
+              cssClasses: {
+                root: [
+                  'w-100',
+                  'mb-2',
+                ],
+                input: [
+                  'form-control',
+                ],
+              }
+            }),
+            instantsearch.widgets.infiniteHits({
+              container: "#hits",
+              cssClasses: {
+                list: [
+                    'ps-0',
+                    'list-group',
+                    'list-group-flush',
+                ],
+                item: [
+                    'list-group-item',
+                    'mb-2',
+                ],
+                loadMore: [
+                    'btn',
+                    'btn-primary',
+                    'mt-0',
+                ],
+              },
+              templates: {
+              item: `
+                <div>
+                <p class='fw-semibold mb-0'>
+                {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
+                </p>
+                <a href="{{ url }}" target="_blank">
+                {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
+                </a>
+                <p>
+                {{#helpers.snippet}}{ "attribute": "content" }{{/helpers.snippet}}
+                </p>
+                </div>
+              `
+              }
+            })
+          ]);
+          search.start();
+    });
+    document.getElementById("urlInput").addEventListener("keypress", (e) => {
+        if (e.key !== 'Enter') {
+            return
+        }
+        const url = e.target.value;
+        e.target.setAttribute("disabled", true);
+        console.log(`scraping ${url}`);
+        console.log(`${window.location.href}scrape?`);
+        fetch(window.location.href + "scrape?" + new URLSearchParams({
+                url: url
+            }))
+            .then((response) => {
+                console.log(`succeeded`);
+                e.target.removeAttribute("disabled");
+                e.target.value = "";
+            })
+            .catch((e) => {
+                alert(`could not scrape: ${e}`);
+                e.target.removeAttribute("disabled");
+                e.target.value = "";
+            });
+    });
 
 </script>
 </body>
