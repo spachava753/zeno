@@ -33,6 +33,7 @@
     </div>
 </div>
 <div class="mb-3">
+    <button id="refreshBtn" class="btn btn-primary p-1 me-2">Refresh</button>
     <label for="urlInput" class="form-label fs-3">Scrape URL</label>
     <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net" name="url">
 </div>
@@ -58,51 +59,51 @@
         apiKey = document.getElementById("apiKey").value;
         console.log(`ApiKey: ${apiKey}`);
         const search = instantsearch({
-          indexName: "sites",
-          searchClient: instantMeiliSearch(
-            window.location.href,
-            apiKey,
-          )
-          });
-          search.addWidgets([
+            indexName: "sites",
+            searchClient: instantMeiliSearch(
+                window.location.href,
+                apiKey,
+            )
+        });
+        search.addWidgets([
             instantsearch.widgets.configure({
                 hitsPerPage: 10,
                 attributesToSnippet: ['content:50'],
             }),
             instantsearch.widgets.searchBox({
-              container: "#searchbox",
-              showSubmit: false,
-              showReset: false,
-              cssClasses: {
-                root: [
-                  'w-100',
-                  'mb-2',
-                ],
-                input: [
-                  'form-control',
-                ],
-              }
+                container: "#searchbox",
+                showSubmit: false,
+                showReset: false,
+                cssClasses: {
+                    root: [
+                        'w-100',
+                        'mb-2',
+                    ],
+                    input: [
+                        'form-control',
+                    ],
+                }
             }),
             instantsearch.widgets.infiniteHits({
-              container: "#hits",
-              cssClasses: {
-                list: [
-                    'ps-0',
-                    'list-group',
-                    'list-group-flush',
-                ],
-                item: [
-                    'list-group-item',
-                    'mb-2',
-                ],
-                loadMore: [
-                    'btn',
-                    'btn-primary',
-                    'mt-0',
-                ],
-              },
-              templates: {
-              item: `
+                container: "#hits",
+                cssClasses: {
+                    list: [
+                        'ps-0',
+                        'list-group',
+                        'list-group-flush',
+                    ],
+                    item: [
+                        'list-group-item',
+                        'mb-2',
+                    ],
+                    loadMore: [
+                        'btn',
+                        'btn-primary',
+                        'mt-0',
+                    ],
+                },
+                templates: {
+                    item: `
                 <div>
                 <p class='fw-semibold mb-0'>
                 {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}}
@@ -115,33 +116,47 @@
                 </p>
                 </div>
               `
-              }
+                }
             })
-          ]);
-          search.start();
-    });
-    document.getElementById("urlInput").addEventListener("keypress", (e) => {
-        if (e.key !== 'Enter') {
-            return
-        }
-        const url = e.target.value;
-        e.target.setAttribute("disabled", true);
-        console.log(`scraping ${url}`);
-        console.log(`${window.location.href}scrape?`);
-        fetch(window.location.href + "scrape?" + new URLSearchParams({
+        ]);
+        search.start();
+        console.log(`registering url input`);
+        document.getElementById("urlInput").addEventListener("keypress", (e) => {
+            if (e.key !== 'Enter') {
+                return
+            }
+            const url = e.target.value;
+            e.target.setAttribute("disabled", true);
+            console.log(`scraping ${url}`);
+            fetch(window.location.href + "scrape?" + new URLSearchParams({
                 url: url
             }))
-            .then((response) => {
-                console.log(`succeeded`);
-                e.target.removeAttribute("disabled");
-                e.target.value = "";
-            })
-            .catch((e) => {
-                alert(`could not scrape: ${e}`);
-                e.target.removeAttribute("disabled");
-                e.target.value = "";
-            });
+                .then((response) => {
+                    console.log(`succeeded`);
+                    e.target.removeAttribute("disabled");
+                    e.target.value = "";
+                    setTimeout(() => {
+                        console.log(`refreshing search cache`);
+                        search.refresh();
+                    }, 10000);
+                })
+                .catch((e) => {
+                    alert(`could not scrape: ${e}`);
+                    e.target.removeAttribute("disabled");
+                    e.target.value = "";
+                    setTimeout(() => {
+                        console.log(`refreshing search cache`);
+                        search.refresh();
+                    }, 10000);
+                });
+        });
+        console.log(`registering refresh button`);
+        document.getElementById("refreshBtn").addEventListener("click", (e) => {
+            console.log(`refreshing search cache`);
+            search.refresh();
+        });
     });
+
 
 </script>
 </body>
