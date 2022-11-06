@@ -4,10 +4,15 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"fmt"
 	"github.com/gocolly/colly"
 	"golang.org/x/net/html"
 	"log"
 	"net/url"
+	"os"
+	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 )
@@ -19,12 +24,20 @@ func (t Timestamp) MarshalJSON() ([]byte, error) {
 	return json.Marshal(tt.Unix())
 }
 
+type DocType string
+
+const (
+	Html = "html"
+	Pdf  = "pdf"
+)
+
 type ScrapedDoc struct {
 	Title      string    `json:"title"`
 	Content    string    `json:"content"`
 	URL        string    `json:"url"`
 	ID         string    `json:"id"`
 	ParsedDate Timestamp `json:"parsed_date"`
+	DocType    DocType   `json:"doc_type"`
 }
 
 type Scraper interface {
@@ -117,12 +130,86 @@ func parseTitle(root *html.Node) string {
 	return ""
 }
 
-func ParseDocument(root *html.Node) ScrapedDoc {
+func ParseHtmlDocument(root *html.Node) ScrapedDoc {
 	var s ScrapedDoc
 	s.Content = parseContent(root)
 	s.Title = parseTitle(root)
 	s.ParsedDate = Timestamp(time.Now())
 	return s
+}
+
+// http://corpus.tools/wiki/Justext/Algorithm
+func HandleHtmlDoc(response *colly.Response) (ScrapedDoc, error) {
+	rootNode, err := html.Parse(bytes.NewReader(response.Body))
+	if err != nil {
+		return ScrapedDoc{}, errors.New("could not parse html response")
+	}
+	parsedDoc := ParseHtmlDocument(rootNode)
+	parsedDoc.URL = response.Request.URL.String()
+	parsedDoc.ID, err = IdFromUrl(parsedDoc.URL)
+	if err != nil {
+		return ScrapedDoc{}, err
+	}
+	parsedDoc.DocType = Html
+	log.Printf("Parsed: %#v\n", parsedDoc)
+	return parsedDoc, nil
+}
+
+func IdFromUrl(url string) (string, error) {
+	var sb strings.Builder
+	encoder := base64.NewEncoder(base64.StdEncoding, &sb)
+	if _, encodingErr := encoder.Write([]byte(url)); encodingErr != nil {
+		return "", fmt.Errorf("could not set ID for parsed document: %w", encodingErr)
+	}
+	return sb.String(), nil
+}
+
+func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
+	fileName := fmt.Sprintf(
+		"%s-%d.pdf",
+		filepath.Base(response.Request.URL.String()),
+		time.Now().Unix(),
+	)
+	fileName = filepath.Join(os.TempDir(), fileName)
+	log.Println("writing to file", fileName)
+	if err := os.WriteFile(fileName, response.Body, 0755); err != nil {
+		return ScrapedDoc{}, fmt.Errorf("could not write file %s: %w", fileName, err)
+	}
+	defer func() {
+		if err := os.Remove(fileName); err != nil {
+			log.Printf("could not remove file %s: %s", fileName, fileName)
+		}
+	}()
+	var buffer bytes.Buffer
+	cmd := exec.Command("pdftotext", fileName, "-")
+	cmd.Stdout = &buffer
+	cmd.Stderr = os.Stderr
+	if err := cmd.Run(); err != nil {
+		return ScrapedDoc{}, fmt.Errorf("could not run pdftotext cmd: %w", err)
+	}
+	var s ScrapedDoc
+	s.Content = buffer.String()
+	s.DocType = Pdf
+	s.URL = response.Request.URL.String()
+	s.Title = strings.Split(strings.TrimSpace(s.Content), "\n")[0]
+	var err error
+	s.ID, err = IdFromUrl(s.URL)
+	if err != nil {
+		return ScrapedDoc{}, err
+	}
+	return s, nil
+}
+
+func DocTypeOf(response *colly.Response) DocType {
+	ext := filepath.Ext(strings.TrimPrefix(response.Request.URL.Path, "/"))
+	if ext == ".pdf" {
+		return Pdf
+	}
+	if ext == "" &&
+		strings.Contains(response.Headers.Get("Content-Type"), "text/html") {
+		return Html
+	}
+	return ""
 }
 
 func MakeCollector(indexer Indexer) *colly.Collector {
@@ -149,24 +236,26 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 	})
 
 	c.OnResponse(func(response *colly.Response) {
-		rootNode, err := html.Parse(bytes.NewReader(response.Body))
+		t := DocTypeOf(response)
+		log.Println("parsed doc type:", t)
+		var s ScrapedDoc
+		var err error
+		switch t {
+		case Html:
+			s, err = HandleHtmlDoc(response)
+		case Pdf:
+			s, err = HandlePdfDoc(response)
+		default:
+			log.Println("unknown document type for url", response.Request.URL)
+			return
+		}
 		if err != nil {
-			log.Println("could not parse html response")
+			log.Println("could scrape document:", err)
 			return
 		}
-		parsedDoc := ParseDocument(rootNode)
-		parsedDoc.URL = response.Request.URL.String()
-		var sb strings.Builder
-		encoder := base64.NewEncoder(base64.StdEncoding, &sb)
-		if _, encodingErr := encoder.Write([]byte(parsedDoc.URL)); encodingErr != nil {
-			log.Println("could not set ID for parsed document:", encodingErr)
-			return
-		}
-		parsedDoc.ID = sb.String()
-		log.Printf("Parsed: %#v\n", parsedDoc)
-		if indexErr := indexer.Index(parsedDoc); indexErr != nil {
-			log.Println("could not index document:", indexErr)
-			return
+		s.ParsedDate = Timestamp(time.Now())
+		if indexErr := indexer.Index(s); indexErr != nil {
+			log.Println("could not index:", indexErr)
 		}
 	})
 
