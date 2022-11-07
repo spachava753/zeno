@@ -20,8 +20,9 @@ build:
     SAVE ARTIFACT /zeno AS LOCAL build/zeno
 
 docker:
-    FROM gcr.io/distroless/cc-debian11
+    FROM bitnami/minideb:bullseye
     WORKDIR /
+    RUN install_packages poppler-utils
     COPY +meilisearch/meilisearch /meilisearch
     COPY +build/zeno .
     EXPOSE 8080

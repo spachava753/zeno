@@ -14,6 +14,7 @@ import (
 
 func main() {
 	var searchPath, dbPath, addr string
+	var dev bool
 	flag.StringVar(
 		&searchPath,
 		"cmd",
@@ -32,8 +33,20 @@ func main() {
 		"127.0.0.1:7700",
 		"Where the search binary will listen on",
 	)
+	flag.BoolVar(
+		&dev,
+		"dev",
+		false,
+		"dev env",
+	)
 
 	flag.Parse()
+
+	_, dev = os.LookupEnv("ZENO_DEV")
+
+	if dev {
+		log.Println("starting in dev mode")
+	}
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
 	sigChan := make(chan os.Signal)
@@ -54,7 +67,7 @@ func main() {
 	mux := http.NewServeMux()
 	index := MakeMeilisearchIndex(SearchUrl, apiKey)
 	indexer := NewMeilisearchIndexer(index)
-	scraper := NewCollyScraper(indexer)
+	scraper := NewCollyScraper(indexer, dev)
 
 	MakeRoutes(scraper, mux)
 

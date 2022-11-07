@@ -2,19 +2,22 @@ package main
 
 import (
 	"bytes"
+	"crypto/tls"
 	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
-	"github.com/gocolly/colly"
-	"golang.org/x/net/html"
 	"log"
+	"net/http"
 	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
+
+	"github.com/gocolly/colly"
+	"golang.org/x/net/html"
 )
 
 type Timestamp time.Time
@@ -49,13 +52,13 @@ type CollyScraper struct {
 	C       *colly.Collector
 }
 
-func NewCollyScraper(indexer Indexer) CollyScraper {
+func NewCollyScraper(indexer Indexer, dev bool) CollyScraper {
 	if indexer == nil {
 		panic("indexer cannot be nil")
 	}
 	return CollyScraper{
 		indexer: indexer,
-		C:       MakeCollector(indexer),
+		C:       MakeCollector(indexer, dev),
 	}
 }
 
@@ -157,7 +160,7 @@ func HandleHtmlDoc(response *colly.Response) (ScrapedDoc, error) {
 
 func IdFromUrl(url string) (string, error) {
 	var sb strings.Builder
-	encoder := base64.NewEncoder(base64.StdEncoding, &sb)
+	encoder := base64.NewEncoder(base64.URLEncoding, &sb)
 	if _, encodingErr := encoder.Write([]byte(url)); encodingErr != nil {
 		return "", fmt.Errorf("could not set ID for parsed document: %w", encodingErr)
 	}
@@ -189,9 +192,11 @@ func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
 	}
 	var s ScrapedDoc
 	s.Content = buffer.String()
+	log.Println("parsed content is", s.Content)
 	s.DocType = Pdf
 	s.URL = response.Request.URL.String()
 	s.Title = strings.Split(strings.TrimSpace(s.Content), "\n")[0]
+	log.Println("parsed title is", s.Title)
 	var err error
 	s.ID, err = IdFromUrl(s.URL)
 	if err != nil {
@@ -212,7 +217,7 @@ func DocTypeOf(response *colly.Response) DocType {
 	return ""
 }
 
-func MakeCollector(indexer Indexer) *colly.Collector {
+func MakeCollector(indexer Indexer, devEnv bool) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page
@@ -221,6 +226,10 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 		colly.Async(true),
 		colly.AllowURLRevisit(),
 	)
+
+	c.WithTransport(&http.Transport{
+		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
+	})
 
 	// On every a element which has href attribute call callback
 	//c.OnHTML("a[href]", func(e *colly.HTMLElement) {
@@ -231,9 +240,11 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 	//	}
 	//})
 
-	c.OnRequest(func(request *colly.Request) {
-		log.Println("Visiting", request.URL)
-	})
+	if devEnv {
+		c.OnRequest(func(request *colly.Request) {
+			log.Println("Visiting", request.URL)
+		})
+	}
 
 	c.OnResponse(func(response *colly.Response) {
 		t := DocTypeOf(response)
