@@ -22,7 +22,7 @@ build:
 docker:
     FROM bitnami/minideb:bullseye
     WORKDIR /
-    RUN install_packages poppler-utils
+    RUN install_packages poppler-utils ca-certificates
     COPY +meilisearch/meilisearch /meilisearch
     COPY +build/zeno .
     EXPOSE 8080

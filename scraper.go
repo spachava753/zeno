@@ -52,13 +52,13 @@ type CollyScraper struct {
 	C       *colly.Collector
 }
 
-func NewCollyScraper(indexer Indexer, dev bool) CollyScraper {
+func NewCollyScraper(indexer Indexer) CollyScraper {
 	if indexer == nil {
 		panic("indexer cannot be nil")
 	}
 	return CollyScraper{
 		indexer: indexer,
-		C:       MakeCollector(indexer, dev),
+		C:       MakeCollector(indexer),
 	}
 }
 
@@ -217,7 +217,7 @@ func DocTypeOf(response *colly.Response) DocType {
 	return ""
 }
 
-func MakeCollector(indexer Indexer, devEnv bool) *colly.Collector {
+func MakeCollector(indexer Indexer) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page
@@ -239,12 +239,6 @@ func MakeCollector(indexer Indexer, devEnv bool) *colly.Collector {
 	//		e.Request.Visit(e.Request.AbsoluteURL(link))
 	//	}
 	//})
-
-	if devEnv {
-		c.OnRequest(func(request *colly.Request) {
-			log.Println("Visiting", request.URL)
-		})
-	}
 
 	c.OnResponse(func(response *colly.Response) {
 		t := DocTypeOf(response)

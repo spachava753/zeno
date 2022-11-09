@@ -49,8 +49,8 @@ func main() {
 	}
 
 	log.SetFlags(log.LstdFlags | log.Lshortfile)
-	sigChan := make(chan os.Signal)
-	signal.Notify(sigChan, os.Interrupt, os.Kill)
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, os.Interrupt)
 
 	apiKey := os.Getenv(ZenoKeyEnv)
 	spm := NewSearchProcessManager(
@@ -67,7 +67,7 @@ func main() {
 	mux := http.NewServeMux()
 	index := MakeMeilisearchIndex(SearchUrl, apiKey)
 	indexer := NewMeilisearchIndexer(index)
-	scraper := NewCollyScraper(indexer, dev)
+	scraper := NewCollyScraper(indexer)
 
 	MakeRoutes(scraper, mux)
 
