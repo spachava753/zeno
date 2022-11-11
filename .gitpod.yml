@@ -6,12 +6,12 @@ tasks:
       go build -o zeno main.go
       rm -rf zeno
   - name: Earthly install
-    init: |
+    command: |
       sudo wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
       sudo chmod +x /usr/local/bin/earthly
       sudo /usr/local/bin/earthly bootstrap --with-autocomplete
   - name: Install flyctl
-    init: |
+    command: |
       curl -L https://fly.io/install.sh | sh
       echo "export PATH=/home/gitpod/.fly/bin:$PATH" >> ~/.bash_profile
 
