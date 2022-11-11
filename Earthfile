@@ -33,3 +33,5 @@ docker:
 clean:
     LOCALLY
     RUN rm -rf build
+
+# docker run -it --rm --name zeno -p 8080:8080 registry.fly.io/zeno:latest
