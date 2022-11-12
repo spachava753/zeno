@@ -43,15 +43,13 @@
                     @click.prevent="tab = 'Add'">Add</a></li>
         </ul>
         <div x-show="tab === 'Search'">
-            <button id="refreshBtn" class="btn btn-primary p-1 me-2"
-                @click.prevent="search && search.refresh()">Refresh</button>
             <div class="wrapper pb-4">
                 <div id="searchbox" focus></div>
                 <div id="hits"></div>
             </div>
         </div>
         <div class="mb-3" x-show="tab === 'Add'">
-            <label for="urlInput" class="form-label fs-3">Scrape URL</label>
+            <label for="urlInput" class="form-label">Scrape URL</label>
             <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
                 @keydown.enter.prevent="scrapeUrl">
         </div>
@@ -137,6 +135,10 @@
                 })
             ]);
             search.start();
+            setInterval(() => {
+                console.log(`refreshing search cache`);
+                search.refresh();
+            }, 2000)
         });
 
         async function scrapeUrl(e) {
