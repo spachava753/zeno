@@ -20,6 +20,8 @@ import (
 	"golang.org/x/net/html"
 )
 
+const DocCtxKey = "doc"
+
 type Timestamp time.Time
 
 func (t Timestamp) MarshalJSON() ([]byte, error) {
@@ -69,7 +71,7 @@ func (c CollyScraper) Scrape(doc ScrapedDoc) error {
 		return err
 	}
 	ctx := colly.NewContext()
-	ctx.Put("doc", doc)
+	ctx.Put(DocCtxKey, doc)
 	return c.C.Request(http.MethodGet, doc.URL, nil, ctx, nil)
 }
 
@@ -136,29 +138,22 @@ func parseTitle(root *html.Node) string {
 	return ""
 }
 
-func ParseHtmlDocument(root *html.Node) ScrapedDoc {
-	var s ScrapedDoc
-	s.Content = parseContent(root)
-	s.Title = parseTitle(root)
-	s.ParsedDate = Timestamp(time.Now())
-	return s
-}
-
 // http://corpus.tools/wiki/Justext/Algorithm
-func HandleHtmlDoc(response *colly.Response) (ScrapedDoc, error) {
+func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) (error) {
 	rootNode, err := html.Parse(bytes.NewReader(response.Body))
 	if err != nil {
-		return ScrapedDoc{}, errors.New("could not parse html response")
+		return errors.New("could not parse html response")
 	}
-	parsedDoc := ParseHtmlDocument(rootNode)
+	parsedDoc.Content = parseContent(rootNode)
+	parsedDoc.Title = parseTitle(rootNode)
 	parsedDoc.URL = response.Request.URL.String()
 	parsedDoc.ID, err = IdFromUrl(parsedDoc.URL)
 	if err != nil {
-		return ScrapedDoc{}, err
+		return err
 	}
 	parsedDoc.DocType = Html
 	log.Printf("Parsed: %#v\n", parsedDoc)
-	return parsedDoc, nil
+	return nil
 }
 
 func IdFromUrl(url string) (string, error) {
@@ -170,7 +165,7 @@ func IdFromUrl(url string) (string, error) {
 	return sb.String(), nil
 }
 
-func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
+func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) (error) {
 	fileName := fmt.Sprintf(
 		"%s-%d.pdf",
 		filepath.Base(response.Request.URL.String()),
@@ -179,7 +174,7 @@ func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
 	fileName = filepath.Join(os.TempDir(), fileName)
 	log.Println("writing to file", fileName)
 	if err := os.WriteFile(fileName, response.Body, 0755); err != nil {
-		return ScrapedDoc{}, fmt.Errorf("could not write file %s: %w", fileName, err)
+		return fmt.Errorf("could not write file %s: %w", fileName, err)
 	}
 	defer func() {
 		if err := os.Remove(fileName); err != nil {
@@ -191,9 +186,8 @@ func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
 	cmd.Stdout = &buffer
 	cmd.Stderr = os.Stderr
 	if err := cmd.Run(); err != nil {
-		return ScrapedDoc{}, fmt.Errorf("could not run pdftotext cmd: %w", err)
+		return fmt.Errorf("could not run pdftotext cmd: %w", err)
 	}
-	var s ScrapedDoc
 	s.Content = buffer.String()
 	log.Println("parsed content is", s.Content)
 	s.DocType = Pdf
@@ -203,9 +197,9 @@ func HandlePdfDoc(response *colly.Response) (ScrapedDoc, error) {
 	var err error
 	s.ID, err = IdFromUrl(s.URL)
 	if err != nil {
-		return ScrapedDoc{}, err
+		return err
 	}
-	return s, nil
+	return nil
 }
 
 func DocTypeOf(response *colly.Response) DocType {
@@ -246,13 +240,13 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 	c.OnResponse(func(response *colly.Response) {
 		t := DocTypeOf(response)
 		log.Println("parsed doc type:", t)
-		var s ScrapedDoc
+		s := response.Ctx.GetAny(DocCtxKey).(ScrapedDoc)
 		var err error
 		switch t {
 		case Html:
-			s, err = HandleHtmlDoc(response)
+			err = HandleHtmlDoc(response, &s)
 		case Pdf:
-			s, err = HandlePdfDoc(response)
+			err = HandlePdfDoc(response, &s)
 		default:
 			log.Println("unknown document type for url", response.Request.URL)
 			return
