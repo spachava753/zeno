@@ -25,13 +25,27 @@ docker:
     RUN install_packages poppler-utils ca-certificates
     COPY +meilisearch/meilisearch /meilisearch
     COPY +build/zeno .
+
+prod:
+    FROM +docker
+    COPY ./static /static
     EXPOSE 8080
     ENTRYPOINT ["/zeno"]
     CMD ["--dbpath", "/meili_data/data"]
     SAVE IMAGE --push registry.fly.io/zeno:latest
 
+dev:
+    FROM +docker
+    EXPOSE 8080
+    ENTRYPOINT ["/zeno"]
+    CMD ["--dbpath", "/meili_data/data"]
+    SAVE IMAGE zeno-dev
+
 clean:
     LOCALLY
     RUN rm -rf build
 
-# docker run -it --rm --name zeno -p 8080:8080 registry.fly.io/zeno:latest
+# docker run -it --rm --name zeno -p 8080:8080 -v /workspace/scrap:/meili_data -v $(pwd)/static:/static:ro zeno-dev
+# docker run -it --rm --name zeno -p 8080:8080 -v /workspace/scrap:/meili_data registry.fly.io/zeno:latest
+# docker run -it --rm --name zeno -p 8080:8080 -v /workspace/scrap:/meili_data -v $(pwd)/static:/static:ro --entrypoint /bin/bash zeno-dev
+# docker run -it --rm --name zeno -p 8080:8080 -v /workspace/scrap:/meili_data --entrypoint /bin/bash registry.fly.io/zeno:latest
