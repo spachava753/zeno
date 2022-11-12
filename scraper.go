@@ -35,16 +35,17 @@ const (
 )
 
 type ScrapedDoc struct {
-	Title      string    `json:"title"`
-	Content    string    `json:"content"`
-	URL        string    `json:"url"`
-	ID         string    `json:"id"`
-	ParsedDate Timestamp `json:"parsed_date"`
-	DocType    DocType   `json:"doc_type"`
+	Title       string    `json:"title"`
+	Description string    `json:"description"`
+	Content     string    `json:"content"`
+	URL         string    `json:"url"`
+	ID          string    `json:"id"`
+	ParsedDate  Timestamp `json:"parsed_date"`
+	DocType     DocType   `json:"doc_type"`
 }
 
 type Scraper interface {
-	Scrape(urlStr string) error
+	Scrape(doc ScrapedDoc) error
 }
 
 type CollyScraper struct {
@@ -62,12 +63,14 @@ func NewCollyScraper(indexer Indexer) CollyScraper {
 	}
 }
 
-func (c CollyScraper) Scrape(urlStr string) error {
-	parsedUrl, err := url.Parse(urlStr)
+func (c CollyScraper) Scrape(doc ScrapedDoc) error {
+	_, err := url.Parse(doc.URL)
 	if err != nil {
 		return err
 	}
-	return c.C.Visit(parsedUrl.String())
+	ctx := colly.NewContext()
+	ctx.Put("doc", doc)
+	return c.C.Request(http.MethodGet, doc.URL, nil, ctx, nil)
 }
 
 const roleKey = "role"
