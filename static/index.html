@@ -43,7 +43,7 @@
                     @click.prevent="tab = 'Add'">Add</a></li>
         </ul>
         <div x-show="tab === 'Search'">
-            <button id="refreshBtn" class="btn btn-primary p-1 me-2">Refresh</button>
+            <button id="refreshBtn" class="btn btn-primary p-1 me-2" @click.prevent="search && search.refresh()">Refresh</button>
             <div class="wrapper pb-4">
                 <div id="searchbox" focus></div>
                 <div id="hits"></div>
@@ -68,11 +68,12 @@
         });
         myModal.show();
         let apiKey = "";
+        let search = "";
         document.getElementById("apiKeyBtn").addEventListener("click", (e) => {
             console.log(`modal closed`);
             apiKey = document.getElementById("apiKey").value;
             console.log(`ApiKey: ${apiKey}`);
-            const search = instantsearch({
+            search = instantsearch({
                 indexName: "sites",
                 searchClient: instantMeiliSearch(
                     serverUrl,
@@ -165,10 +166,6 @@
                     });
             });
             console.log(`registering refresh button`);
-            document.getElementById("refreshBtn").addEventListener("click", (e) => {
-                console.log(`refreshing search cache`);
-                search.refresh();
-            });
         });
 
 
