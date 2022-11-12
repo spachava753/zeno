@@ -18,11 +18,11 @@
 <body class="mx-4 mt-2">
     <h1>Zeno Scraper</h1>
     <!-- Modal -->
-    <div class="modal fade" id="exampleModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+    <div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
         <div class="modal-dialog">
             <div class="modal-content">
                 <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="exampleModalLabel">Modal title</h1>
+                    <h1 class="modal-title fs-5" id="apiKeyModalLabel">Modal title</h1>
                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
                 </div>
                 <div class="modal-body">
@@ -64,7 +64,7 @@
     <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
     <script>
         const serverUrl = window.location.origin + "/";
-        const myModal = new bootstrap.Modal('#exampleModal', {
+        const myModal = new bootstrap.Modal('#apiKeyModal', {
             keyboard: false,
             backdrop: 'static'
         });
