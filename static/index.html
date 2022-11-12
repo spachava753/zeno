@@ -63,7 +63,7 @@
         src="https://cdn.jsdelivr.net/npm/@meilisearch/instant-meilisearch/dist/instant-meilisearch.umd.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
     <script>
-        const serverUrl = window.location.href;
+        const serverUrl = window.location.origin + "/";
         const myModal = new bootstrap.Modal('#exampleModal', {
             keyboard: false,
             backdrop: 'static'
@@ -145,9 +145,11 @@
             e.target.value = "";
             console.log(`scraping ${url}`);
             try {
-                const response = await fetch(window.location.href + "scrape?" + new URLSearchParams({
+                const s = serverUrl + "scrape?" + new URLSearchParams({
                     url: url
-                }));
+                });
+                console.log(`${s}`);
+                const response = await fetch(s);
             } catch (e) {
                 console.log(`error while scraping: ${e}`);
             } finally {
