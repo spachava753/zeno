@@ -42,7 +42,7 @@
             <li class="nav-item"><a href="#" class="nav-item nav-link" :class="tab === 'Add' && 'active'"
                     @click.prevent="tab = 'Add'">Add</a></li>
         </ul>
-        <div x-show="tab === 'Search'">
+        <div class="mt-3" x-show="tab === 'Search'">
             <div class="wrapper pb-4">
                 <div id="searchbox" focus></div>
                 <div id="hits"></div>
