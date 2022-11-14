@@ -92,7 +92,7 @@
             search.addWidgets([
                 instantsearch.widgets.configure({
                     hitsPerPage: 10,
-                    attributesToSnippet: ['content:50'],
+                    attributesToSnippet: ['content:50', 'description:50'],
                 }),
                 instantsearch.widgets.searchBox({
                     container: "#searchbox",
@@ -126,6 +126,16 @@
                             'mt-0',
                         ],
                     },
+                    transformItems(items) {
+                        return items.map(item => {
+                            if (item.description) {
+                                item._highlightResult["searchContent"] = { value: item._highlightResult["description"].value };
+                            } else {
+                                item._highlightResult["searchContent"] = { value: item._highlightResult["content"].value };
+                            }
+                            return item;
+                        });
+                    },
                     templates: {
                         item: `
                 <div>
@@ -136,7 +146,7 @@
                 {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
                 </a>
                 <p>
-                {{#helpers.snippet}}{ "attribute": "content" }{{/helpers.snippet}}
+                {{#helpers.highlight}}{ "attribute": "searchContent" }{{/helpers.highlight}}
                 </p>
                 </div>
               `
