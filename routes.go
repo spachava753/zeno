@@ -14,6 +14,8 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 
 		query := request.URL.Query()
 		urlStr := query.Get("url")
+		titleStr := query.Get("title")
+		descriptionStr := query.Get("description")
 		parsedUrl, parseErr := url.Parse(urlStr)
 		if parseErr != nil {
 			writer.WriteHeader(http.StatusBadRequest)
@@ -21,7 +23,11 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 			return
 		}
 
-		if visitErr := s.Scrape(ScrapedDoc{URL: parsedUrl.String()}); visitErr != nil {
+		if visitErr := s.Scrape(ScrapedDoc{
+			URL:         parsedUrl.String(),
+			Title:       titleStr,
+			Description: descriptionStr,
+		}); visitErr != nil {
 			writer.WriteHeader(http.StatusBadRequest)
 			writer.Write([]byte(visitErr.Error()))
 			return

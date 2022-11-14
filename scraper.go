@@ -145,7 +145,9 @@ func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) (error) {
 		return errors.New("could not parse html response")
 	}
 	parsedDoc.Content = parseContent(rootNode)
-	parsedDoc.Title = parseTitle(rootNode)
+	if parsedDoc.Title == "" {
+		parsedDoc.Title = parseTitle(rootNode)
+	}
 	parsedDoc.URL = response.Request.URL.String()
 	parsedDoc.ID, err = IdFromUrl(parsedDoc.URL)
 	if err != nil {
@@ -192,7 +194,9 @@ func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) (error) {
 	log.Println("parsed content is", s.Content)
 	s.DocType = Pdf
 	s.URL = response.Request.URL.String()
-	s.Title = strings.Split(strings.TrimSpace(s.Content), "\n")[0]
+	if s.Title == "" {
+		s.Title = strings.Split(strings.TrimSpace(s.Content), "\n")[0]
+	}
 	log.Println("parsed title is", s.Title)
 	var err error
 	s.ID, err = IdFromUrl(s.URL)

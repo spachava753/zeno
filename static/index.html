@@ -53,6 +53,12 @@
                 <label for="urlInput" class="form-label">Scrape URL</label>
                 <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
                     :disabled="loading" required x-model="formData.url">
+                <label for="titleInput" class="form-label mt-2">Title (Optional)</label>
+                <input type="text" class="form-control" id="titleInput" placeholder="Some optional title"
+                    :disabled="loading" x-model="formData.title">
+                <label for="descriptionInput" class="form-label mt-2">Description (Optional)</label>
+                <input type="text" class="form-control" id="descriptionInput" placeholder="Some optional description"
+                    :disabled="loading" x-model="formData.description">
                 <button class="btn btn-primary mt-2" :disabled="loading" type="submit">Submit</button>
             </form>
         </div>
@@ -147,7 +153,9 @@
         function ScrapeForm() {
             return {
                 formData: {
-                    url: ''
+                    url: '',
+                    title: '',
+                    description: '',
                 },
                 loading: false,
                 async submitForm() {
@@ -156,7 +164,9 @@
                     console.log(`scraping ${this.formData.url}`);
                     try {
                         const s = serverUrl + "scrape?" + new URLSearchParams({
-                            url: this.formData.url
+                            url: this.formData.url,
+                            title: this.formData.title,
+                            description: this.formData.description,
                         });
                         console.log(`${s}`);
                         const response = await fetch(s);
@@ -165,6 +175,8 @@
                     } finally {
                         this.loading = false;
                         this.formData.url = '';
+                        this.formData.title = '';
+                        this.formData.description = '';
                     }
                     return Promise.resolve();
                 },
