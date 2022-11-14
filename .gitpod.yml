@@ -14,8 +14,10 @@ tasks:
     command: |
       curl -L https://fly.io/install.sh | sh
       echo "export PATH=/home/gitpod/.fly/bin:$PATH" >> ~/.bash_profile
+  - name: Install serve
+    command: npm install --global serve -y
 
 vscode:
-  extensions:
+  extensions:fly a
     - golang.go
     - eamodio.gitlens
