@@ -49,9 +49,12 @@
             </div>
         </div>
         <div class="mb-3" x-show="tab === 'Add'">
-            <label for="urlInput" class="form-label">Scrape URL</label>
-            <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
-                @keydown.enter.prevent="scrapeUrl">
+            <form x-data="ScrapeForm()" @submit.prevent="submitForm">
+                <label for="urlInput" class="form-label">Scrape URL</label>
+                <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
+                    :disabled="loading" required x-model="formData.url">
+                <button class="btn btn-primary mt-2" :disabled="loading" type="submit">Submit</button>
+            </form>
         </div>
     </div>
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
@@ -138,26 +141,34 @@
             setInterval(() => {
                 console.log(`refreshing search cache`);
                 search.refresh();
-            }, 2000)
+            }, 2000);
         });
 
-        async function scrapeUrl(e) {
-            e.target.setAttribute("disabled", true);
-            const url = e.target.value;
-            e.target.value = "";
-            console.log(`scraping ${url}`);
-            try {
-                const s = serverUrl + "scrape?" + new URLSearchParams({
-                    url: url
-                });
-                console.log(`${s}`);
-                const response = await fetch(s);
-            } catch (e) {
-                console.log(`error while scraping: ${e}`);
-            } finally {
-                e.target.removeAttribute("disabled");
+        function ScrapeForm() {
+            return {
+                formData: {
+                    url: ''
+                },
+                loading: false,
+                async submitForm() {
+                    console.log(JSON.stringify(this.formData));
+                    this.loading = true;
+                    console.log(`scraping ${this.formData.url}`);
+                    try {
+                        const s = serverUrl + "scrape?" + new URLSearchParams({
+                            url: this.formData.url
+                        });
+                        console.log(`${s}`);
+                        const response = await fetch(s);
+                    } catch (e) {
+                        console.log(`error while scraping: ${e}`);
+                    } finally {
+                        this.loading = false;
+                        this.formData.url = '';
+                    }
+                    return Promise.resolve();
+                },
             }
-            return Promise.resolve();
         }
     </script>
 </body>
