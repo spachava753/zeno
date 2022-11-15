@@ -16,6 +16,10 @@ tasks:
       echo "export PATH=/home/gitpod/.fly/bin:$PATH" >> ~/.bash_profile
   - name: Install serve
     before: npm install --global serve -y
+  - name: Install Meili
+    before: curl -L https://install.meilisearch.com | sh
+  - name: Install pdftotext
+    before: sudo apt-get install poppler-utils -y
 
 vscode:
   extensions:
