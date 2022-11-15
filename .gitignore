@@ -1,0 +1,6 @@
+build/
+*.ms
+meili_data/
+__debug_bin
+meilisearch
+
