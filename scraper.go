@@ -42,6 +42,7 @@ type ScrapedDoc struct {
 	Content     string    `json:"content"`
 	URL         string    `json:"url"`
 	ID          string    `json:"id"`
+	Scrape      bool      `json:"scraped"`
 	ParsedDate  Timestamp `json:"parsed_date"`
 	DocType     DocType   `json:"doc_type"`
 }
@@ -139,12 +140,14 @@ func parseTitle(root *html.Node) string {
 }
 
 // http://corpus.tools/wiki/Justext/Algorithm
-func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) (error) {
+func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) error {
 	rootNode, err := html.Parse(bytes.NewReader(response.Body))
 	if err != nil {
 		return errors.New("could not parse html response")
 	}
-	parsedDoc.Content = parseContent(rootNode)
+	if parsedDoc.Scrape {
+		parsedDoc.Content = parseContent(rootNode)
+	}
 	if parsedDoc.Title == "" {
 		parsedDoc.Title = parseTitle(rootNode)
 	}
@@ -167,7 +170,7 @@ func IdFromUrl(url string) (string, error) {
 	return sb.String(), nil
 }
 
-func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) (error) {
+func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) error {
 	fileName := fmt.Sprintf(
 		"%s-%d.pdf",
 		filepath.Base(response.Request.URL.String()),
@@ -183,15 +186,17 @@ func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) (error) {
 			log.Printf("could not remove file %s: %s", fileName, fileName)
 		}
 	}()
-	var buffer bytes.Buffer
-	cmd := exec.Command("pdftotext", fileName, "-")
-	cmd.Stdout = &buffer
-	cmd.Stderr = os.Stderr
-	if err := cmd.Run(); err != nil {
-		return fmt.Errorf("could not run pdftotext cmd: %w", err)
+	if s.Scrape {
+		var buffer bytes.Buffer
+		cmd := exec.Command("pdftotext", fileName, "-")
+		cmd.Stdout = &buffer
+		cmd.Stderr = os.Stderr
+		if err := cmd.Run(); err != nil {
+			return fmt.Errorf("could not run pdftotext cmd: %w", err)
+		}
+		s.Content = buffer.String()
+		log.Println("parsed content is", s.Content)
 	}
-	s.Content = buffer.String()
-	log.Println("parsed content is", s.Content)
 	s.DocType = Pdf
 	s.URL = response.Request.URL.String()
 	if s.Title == "" {
