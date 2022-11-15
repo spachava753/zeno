@@ -59,7 +59,12 @@
                 <label for="descriptionInput" class="form-label mt-2">Description (Optional)</label>
                 <input type="text" class="form-control" id="descriptionInput" placeholder="Some optional description"
                     :disabled="loading" x-model="formData.description">
-                <button class="btn btn-primary mt-2" :disabled="loading" type="submit">Submit</button>
+                <label for="scrapeOption" class="form-label mt-2">Scrape site</label>
+                <input type="checkbox" class="form-check-input mt-3" id="scrapeOption" :disabled="loading"
+                    x-model="formData.scrape">
+                <div class="mt-2 border-0 form-control p-0">
+                    <button class="btn btn-primary " :disabled="loading" type="submit">Submit</button>
+                </div>
             </form>
         </div>
     </div>
@@ -166,6 +171,7 @@
                     url: '',
                     title: '',
                     description: '',
+                    scrape: true,
                 },
                 loading: false,
                 async submitForm() {
@@ -177,6 +183,7 @@
                             url: this.formData.url,
                             title: this.formData.title,
                             description: this.formData.description,
+                            scrape: this.formData.scrape,
                         });
                         console.log(`${s}`);
                         const response = await fetch(s);
@@ -187,6 +194,7 @@
                         this.formData.url = '';
                         this.formData.title = '';
                         this.formData.description = '';
+                        this.formData.scrape = true;
                     }
                     return Promise.resolve();
                 },
