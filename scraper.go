@@ -195,7 +195,7 @@ func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) error {
 			return fmt.Errorf("could not run pdftotext cmd: %w", err)
 		}
 		s.Content = buffer.String()
-		log.Println("parsed content is", s.Content)
+		log.Println("parsed content is", s.Content[:50])
 	}
 	s.DocType = Pdf
 	s.URL = response.Request.URL.String()
