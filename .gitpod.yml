@@ -16,7 +16,7 @@ tasks:
   - name: Install pdftotext
     before: sudo apt-get install poppler-utils -y
   - name: Install Just
-    before: cargo install just
+    before: curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | sudo bash -s -- --to /usr/local/bin
 
 vscode:
   extensions:
