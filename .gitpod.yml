@@ -5,11 +5,6 @@ tasks:
       go get ./...
       go build -o zeno main.go
       rm -rf zeno
-  - name: Earthly install
-    before: |
-      sudo wget https://github.com/earthly/earthly/releases/latest/download/earthly-linux-amd64 -O /usr/local/bin/earthly
-      sudo chmod +x /usr/local/bin/earthly
-      sudo /usr/local/bin/earthly bootstrap --with-autocomplete
   - name: Install flyctl
     before: |
       curl -L https://fly.io/install.sh | sh
@@ -20,8 +15,11 @@ tasks:
     before: curl -L https://install.meilisearch.com | sh
   - name: Install pdftotext
     before: sudo apt-get install poppler-utils -y
+  - name: Install Just
+    before: cargo install just
 
 vscode:
   extensions:
     - golang.go
     - eamodio.gitlens
+    - ms-azuretools.vscode-docker
