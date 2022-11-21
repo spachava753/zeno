@@ -1,4 +1,4 @@
-package main
+package indexer
 
 import (
 	"fmt"
@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"zeno/scraper"
 )
 
 const IndexName = "sites"
@@ -14,14 +15,14 @@ const SearchUrl = "http://localhost:7700"
 const ZenoKeyEnv = "ZENO_KEY"
 
 type Indexer interface {
-	Index(doc ScrapedDoc) error
+	Index(doc scraper.ScrapedDoc) error
 }
 
 type MeilisearchIndexer struct {
 	index *meilisearch.Index
 }
 
-func (m MeilisearchIndexer) Index(doc ScrapedDoc) error {
+func (m MeilisearchIndexer) Index(doc scraper.ScrapedDoc) error {
 	task, err := m.index.AddDocuments(doc)
 	if err != nil {
 		return fmt.Errorf("could not index scraped doc: %w", err)

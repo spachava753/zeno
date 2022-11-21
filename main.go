@@ -10,6 +10,8 @@ import (
 	"os"
 	"os/signal"
 	"strings"
+	indexer2 "zeno/indexer"
+	scraper2 "zeno/scraper"
 )
 
 func main() {
@@ -52,8 +54,8 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 
-	apiKey := os.Getenv(ZenoKeyEnv)
-	spm := NewSearchProcessManager(
+	apiKey := os.Getenv(indexer2.ZenoKeyEnv)
+	spm := indexer2.NewSearchProcessManager(
 		searchPath,
 		dbPath,
 		addr,
@@ -65,13 +67,13 @@ func main() {
 	}
 	log.Println("started search server")
 	mux := http.NewServeMux()
-	index := MakeMeilisearchIndex(SearchUrl, apiKey)
-	indexer := NewMeilisearchIndexer(index)
-	scraper := NewCollyScraper(indexer)
+	index := indexer2.MakeMeilisearchIndex(indexer2.SearchUrl, apiKey)
+	indexer := indexer2.NewMeilisearchIndexer(index)
+	scraper := scraper2.NewCollyScraper(indexer)
 
 	MakeRoutes(scraper, mux)
 
-	searchUrl, _ := url.Parse(SearchUrl)
+	searchUrl, _ := url.Parse(indexer2.SearchUrl)
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	srv := http.Server{Addr: ":8080", Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request

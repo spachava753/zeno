@@ -5,9 +5,10 @@ import (
 	"net/http"
 	"net/url"
 	"strconv"
+	"zeno/scraper"
 )
 
-func MakeRoutes(s Scraper, mux *http.ServeMux) {
+func MakeRoutes(s scraper.Scraper, mux *http.ServeMux) {
 	mux.HandleFunc("/scrape", func(writer http.ResponseWriter, request *http.Request) {
 		if request.Method != http.MethodGet {
 			writer.WriteHeader(http.StatusMethodNotAllowed)
@@ -23,19 +24,23 @@ func MakeRoutes(s Scraper, mux *http.ServeMux) {
 		parsedUrl, parseErr := url.Parse(urlStr)
 		if parseErr != nil {
 			writer.WriteHeader(http.StatusBadRequest)
-			writer.Write([]byte(parseErr.Error()))
+			if _, err := writer.Write([]byte(parseErr.Error())); err != nil {
+				log.Println("found error writing response bytes:", err)
+			}
 			return
 		}
 		log.Printf("url: %s, title: %s, description: %s, scrape: %v\n", urlStr, titleStr, descriptionStr, scrape)
 
-		if visitErr := s.Scrape(ScrapedDoc{
+		if visitErr := s.Scrape(scraper.ScrapedDoc{
 			URL:         parsedUrl.String(),
 			Title:       titleStr,
 			Description: descriptionStr,
 			Scrape:      scrape,
 		}); visitErr != nil {
 			writer.WriteHeader(http.StatusBadRequest)
-			writer.Write([]byte(visitErr.Error()))
+			if _, err := writer.Write([]byte(visitErr.Error())); err != nil {
+				log.Println("found error writing response bytes:", err)
+			}
 			return
 		}
 

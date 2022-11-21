@@ -1,4 +1,4 @@
-package main
+package scraper
 
 import (
 	"bytes"
@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"zeno/indexer"
 
 	"github.com/gocolly/colly"
 	"golang.org/x/net/html"
@@ -52,11 +53,11 @@ type Scraper interface {
 }
 
 type CollyScraper struct {
-	indexer Indexer
+	indexer indexer.Indexer
 	C       *colly.Collector
 }
 
-func NewCollyScraper(indexer Indexer) CollyScraper {
+func NewCollyScraper(indexer indexer.Indexer) CollyScraper {
 	if indexer == nil {
 		panic("indexer cannot be nil")
 	}
@@ -223,7 +224,7 @@ func DocTypeOf(response *colly.Response) DocType {
 	return ""
 }
 
-func MakeCollector(indexer Indexer) *colly.Collector {
+func MakeCollector(indexer indexer.Indexer) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page
@@ -237,7 +238,7 @@ func MakeCollector(indexer Indexer) *colly.Collector {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	})
 
-	// On every a element which has href attribute call callback
+	// On every element which has href attribute call callback
 	//c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 	//	link := e.Attr("href")
 	//	if link != "#" {
