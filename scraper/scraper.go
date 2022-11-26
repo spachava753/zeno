@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"crypto/tls"
 	"encoding/base64"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -15,6 +14,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"zeno/domain"
 	"zeno/indexer"
 
 	"github.com/gocolly/colly"
@@ -23,33 +23,8 @@ import (
 
 const DocCtxKey = "doc"
 
-type Timestamp time.Time
-
-func (t Timestamp) MarshalJSON() ([]byte, error) {
-	tt := time.Time(t)
-	return json.Marshal(tt.Unix())
-}
-
-type DocType string
-
-const (
-	Html = "html"
-	Pdf  = "pdf"
-)
-
-type ScrapedDoc struct {
-	Title       string    `json:"title"`
-	Description string    `json:"description"`
-	Content     string    `json:"content"`
-	URL         string    `json:"url"`
-	ID          string    `json:"id"`
-	Scrape      bool      `json:"scraped"`
-	ParsedDate  Timestamp `json:"parsed_date"`
-	DocType     DocType   `json:"doc_type"`
-}
-
 type Scraper interface {
-	Scrape(doc ScrapedDoc) error
+	Scrape(doc domain.ScrapedDoc) error
 }
 
 type CollyScraper struct {
@@ -67,7 +42,7 @@ func NewCollyScraper(indexer indexer.Indexer) CollyScraper {
 	}
 }
 
-func (c CollyScraper) Scrape(doc ScrapedDoc) error {
+func (c CollyScraper) Scrape(doc domain.ScrapedDoc) error {
 	_, err := url.Parse(doc.URL)
 	if err != nil {
 		return err
@@ -141,7 +116,7 @@ func parseTitle(root *html.Node) string {
 }
 
 // http://corpus.tools/wiki/Justext/Algorithm
-func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) error {
+func HandleHtmlDoc(response *colly.Response, parsedDoc *domain.ScrapedDoc) error {
 	rootNode, err := html.Parse(bytes.NewReader(response.Body))
 	if err != nil {
 		return errors.New("could not parse html response")
@@ -157,7 +132,7 @@ func HandleHtmlDoc(response *colly.Response, parsedDoc *ScrapedDoc) error {
 	if err != nil {
 		return err
 	}
-	parsedDoc.DocType = Html
+	parsedDoc.DocType = domain.Html
 	log.Printf("Parsed: %#v\n", parsedDoc)
 	return nil
 }
@@ -171,7 +146,7 @@ func IdFromUrl(url string) (string, error) {
 	return sb.String(), nil
 }
 
-func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) error {
+func HandlePdfDoc(response *colly.Response, s *domain.ScrapedDoc) error {
 	fileName := fmt.Sprintf(
 		"%s-%d.pdf",
 		filepath.Base(response.Request.URL.String()),
@@ -198,7 +173,7 @@ func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) error {
 		s.Content = buffer.String()
 		log.Println("parsed content is", s.Content[:50])
 	}
-	s.DocType = Pdf
+	s.DocType = domain.Pdf
 	s.URL = response.Request.URL.String()
 	if s.Title == "" {
 		s.Title = strings.Split(strings.TrimSpace(s.Content), "\n")[0]
@@ -212,14 +187,14 @@ func HandlePdfDoc(response *colly.Response, s *ScrapedDoc) error {
 	return nil
 }
 
-func DocTypeOf(response *colly.Response) DocType {
+func DocTypeOf(response *colly.Response) domain.DocType {
 	ext := filepath.Ext(strings.TrimPrefix(response.Request.URL.Path, "/"))
 	if ext == ".pdf" {
-		return Pdf
+		return domain.Pdf
 	}
 	if ext == "" &&
 		strings.Contains(response.Headers.Get("Content-Type"), "text/html") {
-		return Html
+		return domain.Html
 	}
 	return ""
 }
@@ -250,12 +225,12 @@ func MakeCollector(indexer indexer.Indexer) *colly.Collector {
 	c.OnResponse(func(response *colly.Response) {
 		t := DocTypeOf(response)
 		log.Println("parsed doc type:", t)
-		s := response.Ctx.GetAny(DocCtxKey).(ScrapedDoc)
+		s := response.Ctx.GetAny(DocCtxKey).(domain.ScrapedDoc)
 		var err error
 		switch t {
-		case Html:
+		case domain.Html:
 			err = HandleHtmlDoc(response, &s)
-		case Pdf:
+		case domain.Pdf:
 			err = HandlePdfDoc(response, &s)
 		default:
 			log.Println("unknown document type for url", response.Request.URL)
@@ -265,7 +240,7 @@ func MakeCollector(indexer indexer.Indexer) *colly.Collector {
 			log.Println("could scrape document:", err)
 			return
 		}
-		s.ParsedDate = Timestamp(time.Now())
+		s.ParsedDate = domain.Timestamp(time.Now())
 		if indexErr := indexer.Index(s); indexErr != nil {
 			log.Println("could not index:", indexErr)
 		}
