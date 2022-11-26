@@ -7,3 +7,12 @@
 # Datasource local storage ignored files
 .idea/dataSources
 .idea/dataSources.local.xml
+
+.vscode
+build
+.gitignore
+.gitpod.yml
+fly.toml
+justfile
+meilisearch
+zeno.db

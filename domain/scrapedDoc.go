@@ -37,5 +37,5 @@ type ScrapedDoc struct {
 }
 
 func (s ScrapedDoc) String() string {
-	return fmt.Sprintf(`domain.ScrapedDoc{Title:"%s", Description:"%s", Content:"%s", URL:"%s", ID:"%s", Scrape:%v, ParsedDate:%s, DocType:"%s"}`, s.Title, s.Description, s.Content, s.URL, s.ID, s.Scrape, s.ParsedDate, s.DocType)
+	return fmt.Sprintf(`domain.ScrapedDoc{Title:"%s", Description:"%s", Content:"%s", URL:"%s", ID:"%s", Scrape:%v, ParsedDate:%s, DocType:"%s"}`, s.Title, s.Description[:50], s.Content[:50], s.URL, s.ID, s.Scrape, s.ParsedDate, s.DocType)
 }

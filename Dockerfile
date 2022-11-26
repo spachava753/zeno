@@ -11,7 +11,7 @@ WORKDIR /app
 COPY go.* ./
 COPY static ./static
 RUN go mod download
-COPY *.go ./
+COPY . ./
 RUN go build -o /zeno
 
 FROM bitnami/minideb:bullseye
