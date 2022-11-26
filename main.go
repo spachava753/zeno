@@ -10,12 +10,13 @@ import (
 	"os"
 	"os/signal"
 	"strings"
-	indexer2 "zeno/indexer"
-	scraper2 "zeno/scraper"
+	"zeno/db"
+	"zeno/indexer"
+	"zeno/scraper"
 )
 
 func main() {
-	var searchPath, dbPath, addr string
+	var searchPath, meiliDataPath, addr, dsn string
 	var dev bool
 	flag.StringVar(
 		&searchPath,
@@ -24,8 +25,8 @@ func main() {
 		"Where the search binary is located",
 	)
 	flag.StringVar(
-		&dbPath,
-		"dbpath",
+		&meiliDataPath,
+		"meili",
 		"./meili_data",
 		"Where the search binary will store data",
 	)
@@ -34,6 +35,12 @@ func main() {
 		"addr",
 		"127.0.0.1:7700",
 		"Where the search binary will listen on",
+	)
+	flag.StringVar(
+		&dsn,
+		"dsn",
+		"zeno.db",
+		"dsn for the document db",
 	)
 	flag.BoolVar(
 		&dev,
@@ -54,10 +61,10 @@ func main() {
 	sigChan := make(chan os.Signal, 1)
 	signal.Notify(sigChan, os.Interrupt)
 
-	apiKey := os.Getenv(indexer2.ZenoKeyEnv)
-	spm := indexer2.NewSearchProcessManager(
+	apiKey := os.Getenv(indexer.ZenoKeyEnv)
+	spm := indexer.NewSearchProcessManager(
 		searchPath,
-		dbPath,
+		meiliDataPath,
 		addr,
 		apiKey,
 	)
@@ -67,13 +74,14 @@ func main() {
 	}
 	log.Println("started search server")
 	mux := http.NewServeMux()
-	index := indexer2.MakeMeilisearchIndex(indexer2.SearchUrl, apiKey)
-	indexer := indexer2.NewMeilisearchIndexer(index)
-	scraper := scraper2.NewCollyScraper(indexer)
+	index := indexer.MakeMeilisearchIndex(indexer.SearchUrl, apiKey)
+	mIndexer := indexer.NewMeilisearchIndexer(index)
+	repo := db.NewGormRepo(dsn)
+	collyScraper := scraper.NewCollyScraper(mIndexer, repo)
 
-	MakeRoutes(scraper, mux)
+	MakeRoutes(collyScraper, mux)
 
-	searchUrl, _ := url.Parse(indexer2.SearchUrl)
+	searchUrl, _ := url.Parse(indexer.SearchUrl)
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	srv := http.Server{Addr: ":8080", Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
@@ -111,7 +119,7 @@ func main() {
 
 	// wait to finish scraping
 	log.Println("waiting for scraper to finish")
-	scraper.C.Wait()
+	collyScraper.C.Wait()
 	log.Println("scraper finished")
 
 	// stop the index

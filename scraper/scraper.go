@@ -2,6 +2,7 @@ package scraper
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"encoding/base64"
 	"errors"
@@ -14,6 +15,7 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+	"zeno/db"
 	"zeno/domain"
 	"zeno/indexer"
 
@@ -32,13 +34,13 @@ type CollyScraper struct {
 	C       *colly.Collector
 }
 
-func NewCollyScraper(indexer indexer.Indexer) CollyScraper {
+func NewCollyScraper(indexer indexer.Indexer, db db.UrlRepo) CollyScraper {
 	if indexer == nil {
 		panic("indexer cannot be nil")
 	}
 	return CollyScraper{
 		indexer: indexer,
-		C:       MakeCollector(indexer),
+		C:       MakeCollector(indexer, db),
 	}
 }
 
@@ -199,7 +201,7 @@ func DocTypeOf(response *colly.Response) domain.DocType {
 	return ""
 }
 
-func MakeCollector(indexer indexer.Indexer) *colly.Collector {
+func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page
@@ -241,6 +243,12 @@ func MakeCollector(indexer indexer.Indexer) *colly.Collector {
 			return
 		}
 		s.ParsedDate = domain.Timestamp(time.Now())
+
+		if saveErr := db.Save(context.Background(), s); saveErr != nil {
+			log.Printf("error on saving doc entry %s: %s\n", response.Request.URL, saveErr)
+			return
+		}
+
 		if indexErr := indexer.Index(s); indexErr != nil {
 			log.Println("could not index:", indexErr)
 		}

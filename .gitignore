@@ -4,3 +4,4 @@ meili_data/
 __debug_bin
 meilisearch
 
+/zeno.db

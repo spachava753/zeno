@@ -5,7 +5,10 @@ go 1.19
 require (
 	github.com/gocolly/colly v1.2.0
 	github.com/meilisearch/meilisearch-go v0.21.0
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/net v0.1.0
+	gorm.io/driver/sqlite v1.4.3
+	gorm.io/gorm v1.24.1
 )
 
 require (
@@ -30,14 +33,10 @@ require (
 	github.com/pkg/errors v0.9.1 // indirect
 	github.com/pmezard/go-difflib v1.0.0 // indirect
 	github.com/saintfish/chardet v0.0.0-20120816061221-3af4cd4741ca // indirect
-	github.com/stretchr/objx v0.5.0 // indirect
-	github.com/stretchr/testify v1.8.1 // indirect
 	github.com/temoto/robotstxt v1.1.2 // indirect
 	github.com/valyala/bytebufferpool v1.0.0 // indirect
 	github.com/valyala/fasthttp v1.37.1-0.20220607072126-8a320890c08d // indirect
 	golang.org/x/text v0.4.0 // indirect
 	google.golang.org/appengine v1.6.7 // indirect
 	gopkg.in/yaml.v3 v3.0.1 // indirect
-	gorm.io/driver/sqlite v1.4.3 // indirect
-	gorm.io/gorm v1.24.1 // indirect
 )
