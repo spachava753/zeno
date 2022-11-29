@@ -12,7 +12,7 @@ import (
 
 type SqliteTestSuite struct {
 	suite.Suite
-	repo UrlRepo
+	repo scraper.UrlRepo
 }
 
 func (s *SqliteTestSuite) TestRepoActions() {
@@ -74,9 +74,8 @@ func (s *SqliteTestSuite) TestRepoActions() {
 	s.T().Log("deleteErr:", deleteErr)
 	s.Assert().Error(deleteErr, "expected to fail deleting")
 
-	// test deleting document with no id
-	testDoc.ID = temp
-	s.Require().NoError(s.repo.Delete(ctx, testDoc), "cannot fail deleting")
+	// test deleting document with just id
+	s.Require().NoError(s.repo.Delete(ctx, domain.ScrapedDoc{ID: temp}), "cannot fail deleting")
 }
 
 func TestExampleTestSuite(t *testing.T) {

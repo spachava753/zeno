@@ -145,7 +145,7 @@
                         item: `
                 <div>
                 <p class='fw-semibold mb-0'>
-                {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}} <span class="badge bg-secondary">{{ doc_type }}</span>
+                {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}} <span class="badge bg-secondary">{{ doc_type }}</span> <a class="btn btn-danger btn-sm" href="/zeno/delete?id={{ id }}" methods="delete">Delete</a>
                 </p>
                 <a href="{{ url }}" target="_blank">
                 {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
@@ -179,7 +179,7 @@
                     this.loading = true;
                     console.log(`scraping ${this.formData.url}`);
                     try {
-                        const s = serverUrl + "scrape?" + new URLSearchParams({
+                        const s = serverUrl + "zeno/scrape?" + new URLSearchParams({
                             url: this.formData.url,
                             title: this.formData.title,
                             description: this.formData.description,

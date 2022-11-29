@@ -15,7 +15,6 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
-	"zeno/db"
 	"zeno/domain"
 	"zeno/indexer"
 
@@ -25,23 +24,45 @@ import (
 
 const DocCtxKey = "doc"
 
+type UrlRepo interface {
+	Save(ctx context.Context, scrapedDoc domain.ScrapedDoc) error
+	Get(ctx context.Context, scrapedDoc domain.ScrapedDoc) (domain.ScrapedDoc, error)
+	GetAll(ctx context.Context) ([]domain.ScrapedDoc, error)
+	Delete(ctx context.Context, scrapedDoc domain.ScrapedDoc) error
+}
+
 type Scraper interface {
 	Scrape(doc domain.ScrapedDoc) error
+	Delete(doc domain.ScrapedDoc) error
 }
 
 type CollyScraper struct {
 	indexer indexer.Indexer
 	C       *colly.Collector
+	db      UrlRepo
 }
 
-func NewCollyScraper(indexer indexer.Indexer, db db.UrlRepo) CollyScraper {
+func NewCollyScraper(indexer indexer.Indexer, db UrlRepo) CollyScraper {
 	if indexer == nil {
 		panic("indexer cannot be nil")
 	}
 	return CollyScraper{
 		indexer: indexer,
 		C:       MakeCollector(indexer, db),
+		db:      db,
 	}
+}
+
+func (c CollyScraper) Delete(doc domain.ScrapedDoc) error {
+	if dIndexErr := c.indexer.Delete(doc); dIndexErr != nil {
+		return fmt.Errorf("cannot delete from index: %w", dIndexErr)
+	}
+
+	if deleteErr := c.db.Delete(context.TODO(), doc); deleteErr != nil {
+		return fmt.Errorf("cannot delete from db: %w", deleteErr)
+	}
+
+	return nil
 }
 
 func (c CollyScraper) Scrape(doc domain.ScrapedDoc) error {
@@ -201,7 +222,7 @@ func DocTypeOf(request *colly.Request) domain.DocType {
 	return domain.Html
 }
 
-func SaveAndIndex(s domain.ScrapedDoc, indexer indexer.Indexer, db db.UrlRepo) error {
+func SaveAndIndex(s domain.ScrapedDoc, indexer indexer.Indexer, db UrlRepo) error {
 	s.ParsedDate = domain.Timestamp(time.Now())
 	if s.ID == "" {
 		var idErr error
@@ -222,7 +243,7 @@ func SaveAndIndex(s domain.ScrapedDoc, indexer indexer.Indexer, db db.UrlRepo) e
 	return nil
 }
 
-func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
+func MakeCollector(indexer indexer.Indexer, db UrlRepo) *colly.Collector {
 	// Instantiate default collector
 	c := colly.NewCollector(
 		// MaxDepth is 1, so only the links on the scraped page

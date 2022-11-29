@@ -16,6 +16,7 @@ const ZenoKeyEnv = "ZENO_KEY"
 
 type Indexer interface {
 	Index(doc domain.ScrapedDoc) error
+	Delete(doc domain.ScrapedDoc) error
 }
 
 type MeilisearchIndexer struct {
@@ -28,6 +29,15 @@ func (m MeilisearchIndexer) Index(doc domain.ScrapedDoc) error {
 		return fmt.Errorf("could not index scraped doc: %w", err)
 	}
 	log.Printf("indexing %s with task UID %d\n", doc.URL, task.TaskUID)
+	return nil
+}
+
+func (m MeilisearchIndexer) Delete(doc domain.ScrapedDoc) error {
+	task, err := m.index.DeleteDocument(doc.ID)
+	if err != nil {
+		return fmt.Errorf("could not delete scraped doc: %w", err)
+	}
+	log.Printf("delete %s with task UID %d\n", doc.ID, task.TaskUID)
 	return nil
 }
 

@@ -90,17 +90,18 @@ func main() {
 	repo := db.NewGormRepo(dsn)
 	collyScraper := scraper.NewCollyScraper(mIndexer, repo)
 
-	MakeRoutes(collyScraper, mux)
+	MakeRoutes(collyScraper, mux, repo)
 
 	searchUrl, _ := url.Parse(indexer.SearchUrl)
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	srv := http.Server{Addr: addr, Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
-		log.Printf("url: %s, method: %s", request.URL, request.Method)
+		log.Printf("url: %s, method: %s, uri: %s", request.URL, request.Method, request.URL.RequestURI())
 
 		// if the request was '/' or '/scrape', serve
-		if strings.HasPrefix(request.URL.RequestURI(), "/scrape") ||
+		if strings.HasPrefix(request.URL.String(), "/zeno") ||
 			request.URL.RequestURI() == "/" {
+			log.Println("handling request")
 			mux.ServeHTTP(writer, request)
 		} else {
 			// otherwise proxy request to search

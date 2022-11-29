@@ -48,13 +48,6 @@ func documentToScrapedDoc(doc *Document) domain.ScrapedDoc {
 
 var EmptyId = errors.New("empty id")
 
-type UrlRepo interface {
-	Save(ctx context.Context, scrapedDoc domain.ScrapedDoc) error
-	Get(ctx context.Context, scrapedDoc domain.ScrapedDoc) (domain.ScrapedDoc, error)
-	GetAll(ctx context.Context) ([]domain.ScrapedDoc, error)
-	Delete(ctx context.Context, scrapedDoc domain.ScrapedDoc) error
-}
-
 type GormRepo struct {
 	db *gorm.DB
 }
