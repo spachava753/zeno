@@ -267,6 +267,8 @@ func MakeCollector(indexer indexer.Indexer, db UrlRepo) *colly.Collector {
 		log.Println("aborting request, skipping scraping")
 		request.Abort()
 
+		s.DocType = DocTypeOf(request)
+
 		if siErr := SaveAndIndex(s, indexer, db); siErr != nil {
 			log.Printf(
 				"error on saving and indexing doc entry %s: %s\n",
