@@ -135,7 +135,7 @@ func HandleHtmlDoc(response *colly.Response, parsedDoc *domain.ScrapedDoc) error
 		return err
 	}
 	parsedDoc.DocType = domain.Html
-	log.Printf("Parsed: %#v\n", parsedDoc)
+	log.Printf("Parsed: %s\n", parsedDoc)
 	return nil
 }
 

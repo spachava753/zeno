@@ -3,6 +3,7 @@ package domain
 import (
 	"encoding/json"
 	"fmt"
+	"math"
 	"time"
 )
 
@@ -36,6 +37,20 @@ type ScrapedDoc struct {
 	DocType     DocType   `json:"doc_type"`
 }
 
+func displayString(s string, l int) string {
+	return s[:int(math.Min(float64(len(s)), float64(l)))]
+}
+
 func (s ScrapedDoc) String() string {
-	return fmt.Sprintf(`domain.ScrapedDoc{Title:"%s", Description:"%s", Content:"%s", URL:"%s", ID:"%s", Scrape:%v, ParsedDate:%s, DocType:"%s"}`, s.Title, s.Description[:50], s.Content[:50], s.URL, s.ID, s.Scrape, s.ParsedDate, s.DocType)
+	return fmt.Sprintf(
+		`domain.ScrapedDoc{Title:"%s", Description:"%s", Content:"%s", URL:"%s", ID:"%s", Scrape:%v, ParsedDate:%s, DocType:"%s"}`,
+		displayString(s.Title, 25),
+		displayString(s.Description, 50),
+		displayString(s.Content, 50),
+		displayString(s.URL, 25),
+		s.ID,
+		s.Scrape,
+		s.ParsedDate,
+		s.DocType,
+	)
 }
