@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>Bootstrap demo</title>
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/css/bootstrap.min.css" rel="stylesheet"
-        integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
+          integrity="sha384-Zenh87qX5JnK2Jl0vWa8Ck2rdkQ2Bzep5IDxbcnCeuOxjzrPF/et3URy9Bv1WTRi" crossorigin="anonymous">
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
     <style>
         ol.ais-InfiniteHits-list {
@@ -16,136 +16,136 @@
 </head>
 
 <body class="mx-4 mt-2">
-    <h1>Zeno Scraper</h1>
-    <!-- Modal -->
-    <div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
-        <div class="modal-dialog">
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h1 class="modal-title fs-5" id="apiKeyModalLabel">Modal title</h1>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
-                </div>
-                <div class="modal-body">
-                    <p>Enter the API Key</p>
-                    <input type="password" id="apiKey" name="apiKey">
-                </div>
-                <div class="modal-footer">
-                    <button id="apiKeyBtn" type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
-                </div>
+<h1>Zeno Scraper</h1>
+<!-- Modal -->
+<div class="modal fade" id="apiKeyModal" tabindex="-1" aria-labelledby="apiKeyModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h1 class="modal-title fs-5" id="apiKeyModalLabel">Modal title</h1>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <p>Enter the API Key</p>
+                <input type="password" id="apiKey" name="apiKey">
+            </div>
+            <div class="modal-footer">
+                <button id="apiKeyBtn" type="button" class="btn btn-primary" data-bs-dismiss="modal">Save</button>
             </div>
         </div>
     </div>
-    <div id="tab_wrapper" x-data="{ tab: 'Search' }">
-        <ul class="nav nav-pills">
-            <li class="nav-item"><a href="#" class="nav-link" :class="tab === 'Search' && 'active'"
-                    @click.prevent="tab = 'Search'">Search</a></li>
-            <li class="nav-item"><a href="#" class="nav-item nav-link" :class="tab === 'Add' && 'active'"
-                    @click.prevent="tab = 'Add'">Add</a></li>
-        </ul>
-        <div class="mt-3" x-show="tab === 'Search'">
-            <div class="wrapper pb-4">
-                <div id="searchbox" focus></div>
-                <div id="hits"></div>
-            </div>
-        </div>
-        <div class="mb-3" x-show="tab === 'Add'">
-            <form x-data="ScrapeForm()" @submit.prevent="submitForm">
-                <label for="urlInput" class="form-label">Scrape URL</label>
-                <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
-                    :disabled="loading" required x-model="formData.url">
-                <label for="titleInput" class="form-label mt-2">Title (Optional)</label>
-                <input type="text" class="form-control" id="titleInput" placeholder="Some optional title"
-                    :disabled="loading" x-model="formData.title">
-                <label for="descriptionInput" class="form-label mt-2">Description (Optional)</label>
-                <input type="text" class="form-control" id="descriptionInput" placeholder="Some optional description"
-                    :disabled="loading" x-model="formData.description">
-                <label for="scrapeOption" class="form-label mt-2">Scrape site</label>
-                <input type="checkbox" class="form-check-input mt-3" id="scrapeOption" :disabled="loading"
-                    x-model="formData.scrape">
-                <div class="mt-2 border-0 form-control p-0">
-                    <button class="btn btn-primary " :disabled="loading" type="submit">Submit</button>
-                </div>
-            </form>
+</div>
+<div id="tab_wrapper" x-data="{ tab: 'Search' }">
+    <ul class="nav nav-pills">
+        <li class="nav-item"><a href="#" class="nav-link" :class="tab === 'Search' && 'active'"
+                                @click.prevent="tab = 'Search'">Search</a></li>
+        <li class="nav-item"><a href="#" class="nav-item nav-link" :class="tab === 'Add' && 'active'"
+                                @click.prevent="tab = 'Add'">Add</a></li>
+    </ul>
+    <div class="mt-3" x-show="tab === 'Search'">
+        <div class="wrapper pb-4">
+            <div id="searchbox" focus></div>
+            <div id="hits"></div>
         </div>
     </div>
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
+    <div class="mb-3" x-show="tab === 'Add'">
+        <form x-data="ScrapeForm()" @submit.prevent="submitForm">
+            <label for="urlInput" class="form-label">Scrape URL</label>
+            <input type="text" class="form-control" id="urlInput" placeholder="https://thespblog.net"
+                   :disabled="loading" required x-model="formData.url">
+            <label for="titleInput" class="form-label mt-2">Title (Optional)</label>
+            <input type="text" class="form-control" id="titleInput" placeholder="Some optional title"
+                   :disabled="loading" x-model="formData.title">
+            <label for="descriptionInput" class="form-label mt-2">Description (Optional)</label>
+            <input type="text" class="form-control" id="descriptionInput" placeholder="Some optional description"
+                   :disabled="loading" x-model="formData.description">
+            <label for="scrapeOption" class="form-label mt-2">Scrape site</label>
+            <input type="checkbox" class="form-check-input mt-3" id="scrapeOption" :disabled="loading"
+                   x-model="formData.scrape">
+            <div class="mt-2 border-0 form-control p-0">
+                <button class="btn btn-primary " :disabled="loading" type="submit">Submit</button>
+            </div>
+        </form>
+    </div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.2.2/dist/js/bootstrap.bundle.min.js"
         integrity="sha384-OERcA2EqjJCMA+/3y+gxIOqMEjwtxJY7qPCqsdltbNJuaOe923+mo//f6V8Qbsw3"
         crossorigin="anonymous"></script>
-    <script
+<script
         src="https://cdn.jsdelivr.net/npm/@meilisearch/instant-meilisearch/dist/instant-meilisearch.umd.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
-    <script>
-        const serverUrl = window.location.origin + "/";
-        const myModal = new bootstrap.Modal('#apiKeyModal', {
-            keyboard: false,
-            backdrop: 'static'
+<script src="https://cdn.jsdelivr.net/npm/instantsearch.js@4"></script>
+<script>
+    const serverUrl = window.location.origin + "/";
+    const myModal = new bootstrap.Modal('#apiKeyModal', {
+        keyboard: false,
+        backdrop: 'static'
+    });
+    myModal.show();
+    let apiKey = "";
+    let search = "";
+    document.getElementById("apiKeyBtn").addEventListener("click", (e) => {
+        console.log(`modal closed`);
+        apiKey = document.getElementById("apiKey").value;
+        console.log(`ApiKey: ${apiKey}`);
+        search = instantsearch({
+            indexName: "sites",
+            searchClient: instantMeiliSearch(
+                serverUrl,
+                apiKey,
+            )
         });
-        myModal.show();
-        let apiKey = "";
-        let search = "";
-        document.getElementById("apiKeyBtn").addEventListener("click", (e) => {
-            console.log(`modal closed`);
-            apiKey = document.getElementById("apiKey").value;
-            console.log(`ApiKey: ${apiKey}`);
-            search = instantsearch({
-                indexName: "sites",
-                searchClient: instantMeiliSearch(
-                    serverUrl,
-                    apiKey,
-                )
-            });
-            search.addWidgets([
-                instantsearch.widgets.configure({
-                    hitsPerPage: 10,
-                    attributesToSnippet: ['content:50', 'description:50'],
-                }),
-                instantsearch.widgets.searchBox({
-                    container: "#searchbox",
-                    showSubmit: false,
-                    showReset: false,
-                    cssClasses: {
-                        root: [
-                            'w-100',
-                            'mb-2',
-                        ],
-                        input: [
-                            'form-control',
-                        ],
-                    }
-                }),
-                instantsearch.widgets.infiniteHits({
-                    container: "#hits",
-                    cssClasses: {
-                        list: [
-                            'ps-0',
-                            'list-group',
-                            'list-group-flush',
-                        ],
-                        item: [
-                            'list-group-item',
-                            'mb-2',
-                        ],
-                        loadMore: [
-                            'btn',
-                            'btn-primary',
-                            'mt-0',
-                        ],
-                    },
-                    transformItems(items) {
-                        return items.map(item => {
-                            if (item.description) {
-                                item._highlightResult["searchContent"] = { value: item._highlightResult["description"].value };
-                            } else {
-                                item._highlightResult["searchContent"] = { value: item._highlightResult["content"].value };
-                            }
-                            return item;
-                        });
-                    },
-                    templates: {
-                        item: `
+        search.addWidgets([
+            instantsearch.widgets.configure({
+                hitsPerPage: 10,
+                attributesToSnippet: ['content:50', 'description:50'],
+            }),
+            instantsearch.widgets.searchBox({
+                container: "#searchbox",
+                showSubmit: false,
+                showReset: false,
+                cssClasses: {
+                    root: [
+                        'w-100',
+                        'mb-2',
+                    ],
+                    input: [
+                        'form-control',
+                    ],
+                }
+            }),
+            instantsearch.widgets.infiniteHits({
+                container: "#hits",
+                cssClasses: {
+                    list: [
+                        'ps-0',
+                        'list-group',
+                        'list-group-flush',
+                    ],
+                    item: [
+                        'list-group-item',
+                        'mb-2',
+                    ],
+                    loadMore: [
+                        'btn',
+                        'btn-primary',
+                        'mt-0',
+                    ],
+                },
+                transformItems(items) {
+                    return items.map(item => {
+                        if (item.description) {
+                            item._highlightResult["searchContent"] = {value: item._highlightResult["description"].value};
+                        } else {
+                            item._highlightResult["searchContent"] = {value: item._highlightResult["content"].value};
+                        }
+                        return item;
+                    });
+                },
+                templates: {
+                    item: `
                 <div>
                 <p class='fw-semibold mb-0'>
-                {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}} <span class="badge bg-secondary">{{ doc_type }}</span> <a class="btn btn-danger btn-sm" href="/zeno/delete?id={{ id }}" methods="delete">Delete</a>
+                {{#helpers.highlight}}{ "attribute": "title" }{{/helpers.highlight}} <span class="badge bg-secondary">{{ doc_type }}</span> <a class="btn btn-danger btn-sm url-delete" onclick="deleteDoc('{{ id }}')">Delete</a>
                 </p>
                 <a href="{{ url }}" target="_blank">
                 {{#helpers.highlight}}{ "attribute": "url" }{{/helpers.highlight}}
@@ -155,52 +155,71 @@
                 </p>
                 </div>
               `
-                    }
-                })
-            ]);
-            search.start();
-            setInterval(() => {
-                console.log(`refreshing search cache`);
-                search.refresh();
-            }, 2000);
-        });
+                }
+            })
+        ]);
+        search.start();
+        setInterval(() => {
+            console.log(`refreshing search cache`);
+            search.refresh();
+        }, 2000);
+    });
 
-        function ScrapeForm() {
-            return {
-                formData: {
-                    url: '',
-                    title: '',
-                    description: '',
-                    scrape: true,
-                },
-                loading: false,
-                async submitForm() {
-                    console.log(JSON.stringify(this.formData));
-                    this.loading = true;
-                    console.log(`scraping ${this.formData.url}`);
-                    try {
-                        const s = serverUrl + "zeno/scrape?" + new URLSearchParams({
-                            url: this.formData.url,
-                            title: this.formData.title,
-                            description: this.formData.description,
-                            scrape: this.formData.scrape,
-                        });
-                        console.log(`${s}`);
-                        const response = await fetch(s);
-                    } catch (e) {
-                        console.log(`error while scraping: ${e}`);
-                    } finally {
-                        this.loading = false;
-                        this.formData.url = '';
-                        this.formData.title = '';
-                        this.formData.description = '';
-                        this.formData.scrape = true;
-                    }
-                    return Promise.resolve();
-                },
+    async function deleteDoc(id) {
+        console.log(`deleting doc with id: ${id}`);
+        try {
+            const s = serverUrl + "zeno/delete?" + new URLSearchParams({
+                id: id,
+            });
+            console.log(`${s}`);
+            const response = await fetch(s);
+            if (!response.ok) {
+                console.log(`failed to delete doc ${id}`);
             }
+        } catch (e) {
+            console.log(`error while scraping: ${e}`);
+        } finally {
+
         }
-    </script>
+        return Promise.resolve();
+    }
+
+    function ScrapeForm() {
+        return {
+            formData: {
+                url: '',
+                title: '',
+                description: '',
+                scrape: true,
+            },
+            loading: false,
+            async submitForm() {
+                console.log(JSON.stringify(this.formData));
+                this.loading = true;
+                console.log(`scraping ${this.formData.url}`);
+                try {
+                    const s = serverUrl + "zeno/scrape?" + new URLSearchParams({
+                        url: this.formData.url,
+                        title: this.formData.title,
+                        description: this.formData.description,
+                        scrape: this.formData.scrape,
+                    });
+                    console.log(`${s}`);
+                    const response = await fetch(s);
+                } catch (e) {
+                    console.log(`error while scraping: ${e}`);
+                } finally {
+                    this.loading = false;
+                    this.formData.url = '';
+                    this.formData.title = '';
+                    this.formData.description = '';
+                    this.formData.scrape = true;
+                }
+                return Promise.resolve();
+            },
+        }
+    }
+</script>
 </body>
 
 </html>
