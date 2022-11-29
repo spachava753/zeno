@@ -189,16 +189,37 @@ func HandlePdfDoc(response *colly.Response, s *domain.ScrapedDoc) error {
 	return nil
 }
 
-func DocTypeOf(response *colly.Response) domain.DocType {
-	ext := filepath.Ext(strings.TrimPrefix(response.Request.URL.Path, "/"))
+func DocTypeOf(request *colly.Request) domain.DocType {
+	ext := filepath.Ext(strings.TrimPrefix(request.URL.Path, "/"))
 	if ext == ".pdf" {
 		return domain.Pdf
 	}
-	if ext == "" &&
-		strings.Contains(response.Headers.Get("Content-Type"), "text/html") {
-		return domain.Html
+	//if ext == "" &&
+	//	strings.Contains(request.Headers.Get("Content-Type"), "text/html") {
+	//	return domain.Html
+	//}
+	return domain.Html
+}
+
+func SaveAndIndex(s domain.ScrapedDoc, indexer indexer.Indexer, db db.UrlRepo) error {
+	s.ParsedDate = domain.Timestamp(time.Now())
+	if s.ID == "" {
+		var idErr error
+		s.ID, idErr = IdFromUrl(s.URL)
+		if idErr != nil {
+			return idErr
+		}
 	}
-	return ""
+
+	if saveErr := db.Save(context.Background(), s); saveErr != nil {
+		return fmt.Errorf("error on saving doc entry %s: %w", s.URL, saveErr)
+	}
+
+	if indexErr := indexer.Index(s); indexErr != nil {
+		return fmt.Errorf("could not index: %w", indexErr)
+	}
+
+	return nil
 }
 
 func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
@@ -215,6 +236,25 @@ func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
 		TLSClientConfig: &tls.Config{InsecureSkipVerify: true},
 	})
 
+	c.OnRequest(func(request *colly.Request) {
+		s := request.Ctx.GetAny(DocCtxKey).(domain.ScrapedDoc)
+		if s.Scrape {
+			// continue with requesting page and scraping
+			return
+		}
+
+		log.Println("aborting request, skipping scraping")
+		request.Abort()
+
+		if siErr := SaveAndIndex(s, indexer, db); siErr != nil {
+			log.Printf(
+				"error on saving and indexing doc entry %s: %s\n",
+				s.URL,
+				siErr,
+			)
+		}
+	})
+
 	// On every element which has href attribute call callback
 	//c.OnHTML("a[href]", func(e *colly.HTMLElement) {
 	//	link := e.Attr("href")
@@ -225,8 +265,7 @@ func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
 	//})
 
 	c.OnResponse(func(response *colly.Response) {
-		t := DocTypeOf(response)
-		log.Println("parsed doc type:", t)
+		t := DocTypeOf(response.Request)
 		s := response.Ctx.GetAny(DocCtxKey).(domain.ScrapedDoc)
 		var err error
 		switch t {
@@ -242,15 +281,13 @@ func MakeCollector(indexer indexer.Indexer, db db.UrlRepo) *colly.Collector {
 			log.Println("could scrape document:", err)
 			return
 		}
-		s.ParsedDate = domain.Timestamp(time.Now())
 
-		if saveErr := db.Save(context.Background(), s); saveErr != nil {
-			log.Printf("error on saving doc entry %s: %s\n", response.Request.URL, saveErr)
-			return
-		}
-
-		if indexErr := indexer.Index(s); indexErr != nil {
-			log.Println("could not index:", indexErr)
+		if siErr := SaveAndIndex(s, indexer, db); siErr != nil {
+			log.Printf(
+				"error on saving and indexing doc entry %s: %s\n",
+				s.URL,
+				siErr,
+			)
 		}
 	})
 
