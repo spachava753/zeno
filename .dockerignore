@@ -16,3 +16,7 @@ fly.toml
 justfile
 meilisearch
 zeno.db
+Dockerfile
+.git
+.idea
+.dockerignore

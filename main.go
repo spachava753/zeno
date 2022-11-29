@@ -16,7 +16,7 @@ import (
 )
 
 func main() {
-	var searchPath, meiliDataPath, addr, dsn string
+	var searchPath, meiliDataPath, searchAddr, dsn, addr string
 	var dev bool
 	flag.StringVar(
 		&searchPath,
@@ -31,8 +31,8 @@ func main() {
 		"Where the search binary will store data",
 	)
 	flag.StringVar(
-		&addr,
-		"addr",
+		&searchAddr,
+		"search-addr",
 		"127.0.0.1:7700",
 		"Where the search binary will listen on",
 	)
@@ -41,6 +41,12 @@ func main() {
 		"dsn",
 		"zeno.db",
 		"dsn for the document db",
+	)
+	flag.StringVar(
+		&addr,
+		"addr",
+		":8080",
+		"address to use to start server",
 	)
 	flag.BoolVar(
 		&dev,
@@ -52,6 +58,11 @@ func main() {
 	flag.Parse()
 
 	_, dev = os.LookupEnv("ZENO_DEV")
+
+	log.Println("db path:", dsn)
+	log.Println("meili data path:", meiliDataPath)
+	log.Println("search address:", searchAddr)
+	log.Println("search executable:", searchPath)
 
 	if dev {
 		log.Println("starting in dev mode")
@@ -65,7 +76,7 @@ func main() {
 	spm := indexer.NewSearchProcessManager(
 		searchPath,
 		meiliDataPath,
-		addr,
+		searchAddr,
 		apiKey,
 	)
 	if err := spm.Start(); err != nil {
@@ -83,7 +94,7 @@ func main() {
 
 	searchUrl, _ := url.Parse(indexer.SearchUrl)
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)
-	srv := http.Server{Addr: ":8080", Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
+	srv := http.Server{Addr: addr, Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
 		log.Printf("url: %s, method: %s", request.URL, request.Method)
 
@@ -99,7 +110,7 @@ func main() {
 
 	// start http server
 	go func() {
-		log.Println("Starting HTTP server")
+		log.Println("Starting HTTP server at", addr)
 
 		if err := srv.ListenAndServe(); err != http.ErrServerClosed {
 			log.Printf("HTTP server Shutdown: %s\n", err)

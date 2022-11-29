@@ -22,4 +22,4 @@ COPY --from=builder /zeno .
 COPY ./static /static
 EXPOSE 8080
 ENTRYPOINT ["/zeno"]
-CMD ["--dbpath", "/meili_data/data"]
+CMD ["-meili", "/zeno_data/data.ms", "-dsn", "file:/zeno_data/zeno.db?mode=rwc"]
