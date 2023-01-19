@@ -73,20 +73,25 @@ func main() {
 	signal.Notify(sigChan, os.Interrupt)
 
 	apiKey := os.Getenv(indexer.ZenoKeyEnv)
+
+	index, healthCheck := indexer.MakeMeilisearchIndex(indexer.SearchUrl, apiKey)
+	mIndexer := indexer.NewMeilisearchIndexer(index)
+
 	spm := indexer.NewSearchProcessManager(
 		searchPath,
 		meiliDataPath,
 		searchAddr,
 		apiKey,
+		healthCheck,
+		sigChan,
 	)
 	if err := spm.Start(); err != nil {
 		log.Println("could not start search:", err)
 		os.Exit(1)
 	}
 	log.Println("started search server")
+
 	mux := http.NewServeMux()
-	index := indexer.MakeMeilisearchIndex(indexer.SearchUrl, apiKey)
-	mIndexer := indexer.NewMeilisearchIndexer(index)
 	repo := db.NewGormRepo(dsn)
 	collyScraper := scraper.NewCollyScraper(mIndexer, repo)
 
@@ -96,7 +101,10 @@ func main() {
 	rp := httputil.NewSingleHostReverseProxy(searchUrl)
 	srv := http.Server{Addr: addr, Handler: http.HandlerFunc(func(writer http.ResponseWriter, request *http.Request) {
 		// log request
-		log.Printf("url: %s, method: %s, uri: %s", request.URL, request.Method, request.URL.RequestURI())
+		if request.URL.String() != "/indexes/sites/search" {
+			// avoid spamming logs with instant search client refresh requests
+			log.Printf("url: %s, method: %s, uri: %s", request.URL, request.Method, request.URL.RequestURI())
+		}
 
 		// if the request was '/' or '/scrape', serve
 		if strings.HasPrefix(request.URL.String(), "/zeno") ||

@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"syscall"
+	"time"
 	"zeno/domain"
 )
 
@@ -50,19 +51,22 @@ func NewMeilisearchIndexer(index *meilisearch.Index) MeilisearchIndexer {
 	}
 }
 
-func MakeMeilisearchIndex(host, apiKey string) *meilisearch.Index {
+func MakeMeilisearchIndex(host, apiKey string) (*meilisearch.Index, func() bool) {
 	c := meilisearch.NewClient(meilisearch.ClientConfig{
-		Host:   host,
-		APIKey: apiKey,
+		Host:    host,
+		APIKey:  apiKey,
+		Timeout: 100 * time.Millisecond,
 	})
-	return c.Index(IndexName)
+	return c.Index(IndexName), c.IsHealthy
 }
 
 type SearchProcessManager struct {
-	cmd *exec.Cmd
+	cmd     *exec.Cmd
+	check   func() bool
+	stopSig chan os.Signal
 }
 
-func NewSearchProcessManager(cmdPath, dbPath, addr, apiKey string) SearchProcessManager {
+func NewSearchProcessManager(cmdPath, dbPath, addr, apiKey string, check func() bool, sigChan chan os.Signal) SearchProcessManager {
 	cmd := exec.Command(cmdPath,
 		"--db-path", dbPath,
 		"--http-addr", addr)
@@ -74,7 +78,9 @@ func NewSearchProcessManager(cmdPath, dbPath, addr, apiKey string) SearchProcess
 		cmd.Args = append(cmd.Args, "--env=development")
 	}
 	return SearchProcessManager{
-		cmd: cmd,
+		cmd:     cmd,
+		check:   check,
+		stopSig: sigChan,
 	}
 }
 
@@ -82,6 +88,33 @@ func (s *SearchProcessManager) Start() error {
 	s.cmd.SysProcAttr = &syscall.SysProcAttr{Setpgid: true}
 	s.cmd.Stdout = os.Stdout
 	s.cmd.Stderr = os.Stderr
+	// run health check
+	go func() {
+		time.Sleep(5 * time.Second)
+		log.Println("started search health check")
+		failCount := 0
+		for failCount < 3 {
+			if !s.check() {
+				failCount += 1
+			} else {
+				failCount = 0
+			}
+			time.Sleep(1 * time.Second)
+		}
+
+		log.Println("search health check failed")
+
+		if err := s.Stop(); err != nil {
+			log.Println("err stopping search", err)
+		}
+
+		if waitErr := s.Wait(); waitErr != nil {
+			log.Println("err waiting on search", waitErr)
+		}
+
+		log.Println("sending signal to shutdown")
+		s.stopSig <- os.Interrupt
+	}()
 	return s.cmd.Start()
 }
 
