@@ -1,9 +1,5 @@
-install:
-    curl -L https://install.meilisearch.com | sh
-
 build:
-    go get ./...
-    go build -o build/zeno
+    cargo build ./...
 
 clean:
     rm -rf build data.ms meilisearch meili_data zeno.db
@@ -12,7 +8,7 @@ deploy:
     fly deploy
 
 dev:
-    go run .
+    cargo run .
 
 docker-run: docker-clean
     docker run -it -p 8080:8080 -v $(pwd)/static:/static:ro --name zeno zeno -meili /data.ms -dsn "file:/zeno.db?mode=rwc"

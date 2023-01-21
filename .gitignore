@@ -5,3 +5,8 @@ __debug_bin
 meilisearch
 
 /zeno.db
+
+
+# Added by cargo
+
+/target
