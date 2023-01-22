@@ -4,9 +4,11 @@ use color_eyre::Result;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, INDEXED, STORED, TEXT};
-use tantivy::{Document, Index, IndexReader, IndexWriter};
+use tantivy::{DateTime, Document as TantivyDocument, Index, IndexReader, IndexWriter};
 
-struct Searcher {
+use crate::doc::{Document, Timestamp};
+
+pub struct Searcher {
     writer: IndexWriter,
     reader: IndexReader,
     index: Index,
@@ -23,7 +25,7 @@ impl Searcher {
     const BODY_FIELD: &'static str = "body";
     const DESCRIPTION_FIELD: &'static str = "description";
     const PARSED_TIME_FIELD: &'static str = "parsed";
-    fn new<P: AsRef<Path>>(index_dir: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(index_dir: P) -> Result<Self> {
         // create schema
         let mut schema_builder = Schema::builder();
         let url_field = schema_builder.add_text_field(Self::URL_FIELD, TEXT | STORED);
@@ -52,13 +54,27 @@ impl Searcher {
         })
     }
 
-    fn add_doc(&mut self, doc: Document) -> Result<()> {
+    pub fn add_doc(&mut self, document: Document) -> Result<()> {
+        let mut doc = TantivyDocument::new();
+        doc.add_text(self.url_field, document.url().path());
+        doc.add_text(self.title_field, document.title());
+        if let Some(body) = document.body() {
+            doc.add_text(self.body_field, body);
+        }
+        if let Some(description) = document.description() {
+            doc.add_text(self.description_field, description);
+        }
+        let timestamp: i64 = document.parsed_date().try_into()?;
+        doc.add_date(
+            self.parsed_time_field,
+            DateTime::from_timestamp_millis(timestamp),
+        );
         self.writer.add_document(doc)?;
         self.writer.commit()?;
         Ok(())
     }
 
-    fn search(&self, query_str: &str, limit: usize) -> Result<Vec<Document>> {
+    pub fn search(&self, query_str: &str, limit: usize) -> Result<Vec<TantivyDocument>> {
         let query_parser = QueryParser::for_index(
             &self.index,
             vec![
@@ -86,10 +102,9 @@ impl Searcher {
 
 #[cfg(test)]
 mod tests {
-    use std::time::SystemTime;
+    use url::Url;
 
-    use tantivy::DateTime;
-    use crate::doc::Timestamp;
+    use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Timestamp};
 
     use super::*;
 
@@ -98,23 +113,18 @@ mod tests {
         let dir = tempdir::TempDir::new("tantivy-test")?;
         println!("creating tantivy index in {dir:?}");
         let mut searcher = Searcher::new(dir.path())?;
-        let mut doc = Document::new();
-        doc.add_text(searcher.url_field, "https://sirupsen.com/index-merges");
-        doc.add_text(searcher.title_field, "Neural Network From Scratch");
-        doc.add_text(
-            searcher.body_field,
-            include_str!("../testdata/neural-net.html"),
-        );
-        doc.add_text(
-            searcher.description_field,
-            "Article about writing a neural net from scratch",
-        );
-        let timestamp = Timestamp::now()?;
-        let timestamp: i64 = timestamp.try_into()?;
-        doc.add_date(
-            searcher.parsed_time_field,
-            DateTime::from_timestamp_millis(timestamp),
-        );
+        let doc = Document::builder()
+            .url(Url::parse("https://sirupsen.com/index-merges")?)
+            .title(DocTitle::new("Neural Network From Scratch".to_string())?)
+            .body(Some(DocBody::new(
+                include_str!("../testdata/neural-net.html").to_string(),
+            )?))
+            .description(Some(DocDescription::new(
+                "Article about writing a neural net from scratch".to_string(),
+            )?))
+            .doc_type(DocType::Html)
+            .parsed_date(Timestamp::now()?)
+            .build();
         searcher.add_doc(doc)?;
 
         searcher.reader.reload()?; // force a reload
