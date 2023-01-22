@@ -1,7 +1,10 @@
+mod doc;
+mod searcher;
+
 use axum::{
-    routing::{get, post},
     http::StatusCode,
     response::IntoResponse,
+    routing::{get, post},
     Json, Router,
 };
 use serde::{Deserialize, Serialize};
