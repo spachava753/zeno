@@ -86,8 +86,10 @@ impl Searcher {
 
 #[cfg(test)]
 mod tests {
+    use std::time::SystemTime;
+
     use tantivy::DateTime;
-    use time::OffsetDateTime;
+    use crate::doc::Timestamp;
 
     use super::*;
 
@@ -107,9 +109,11 @@ mod tests {
             searcher.description_field,
             "Article about writing a neural net from scratch",
         );
+        let timestamp = Timestamp::now()?;
+        let timestamp: i64 = timestamp.try_into()?;
         doc.add_date(
             searcher.parsed_time_field,
-            DateTime::from_timestamp_millis(OffsetDateTime::now_utc().unix_timestamp()),
+            DateTime::from_timestamp_millis(timestamp),
         );
         searcher.add_doc(doc)?;
 

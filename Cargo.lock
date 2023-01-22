@@ -1783,7 +1783,6 @@ dependencies = [
  "serde_json",
  "tantivy",
  "tempdir",
- "time",
  "tokio",
  "tracing",
  "tracing-subscriber",
