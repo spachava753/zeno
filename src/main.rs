@@ -43,7 +43,9 @@ async fn main() {
         .with_max_level(Level::INFO)
         .init();
 
-    let (search_engine_handle, tx) = searcher::actor::start_actor();
+    // TODO: for testing
+    let (search_engine_handle, tx) =
+        searcher::actor::start_actor("testdata").expect("could not start actor");
 
     // build our application with a route
     let app = Router::new()
@@ -61,7 +63,7 @@ async fn main() {
 
     // run our app with hyper
     // `axum::Server` is a re-export of `hyper::Server`
-    let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
+    let addr = SocketAddr::from(([127, 0, 0, 1], 8080));
     info!("listening on {}", addr);
     let axum_handle = tokio::spawn(
         axum::Server::bind(&addr)
@@ -124,19 +126,19 @@ async fn index_doc(
     Json(payload): Json<IndexDoc>,
 ) -> impl IntoResponse {
     info!("indexing new document");
-    let (tx, rx) = oneshot::channel();
-    if let Err(_) = state.tx.send(SearchEngineMsg::Index { resp: tx }).await {
-        error!("receiver dropped");
-    }
-
-    match rx.await {
-        Ok(s) => {
-            info!("message received: {}", s);
-        }
-        Err(e) => {
-            error!("sender dropped: {}", e);
-        }
-    }
+    // let (tx, rx) = oneshot::channel();
+    // if let Err(_) = state.tx.send(SearchEngineMsg::Index { resp: tx }).await {
+    //     error!("receiver dropped");
+    // }
+    //
+    // match rx.await {
+    //     Ok(s) => {
+    //         info!("message received: {:?}", s);
+    //     }
+    //     Err(e) => {
+    //         error!("sender dropped: {}", e);
+    //     }
+    // }
     // this will be converted into a JSON response
     // with a status code of `201 Created`
     StatusCode::OK
@@ -149,13 +151,21 @@ async fn search_docs(
 ) -> impl IntoResponse {
     info!("handling search request");
     let (tx, rx) = oneshot::channel();
-    if let Err(_) = state.tx.send(SearchEngineMsg::Search { resp: tx }).await {
+    if let Err(_) = state
+        .tx
+        .send(SearchEngineMsg::Search {
+            query: payload.query,
+            limit: 10,
+            resp: tx,
+        })
+        .await
+    {
         error!("receiver dropped");
     }
 
     match rx.await {
         Ok(s) => {
-            info!("message received: {}", s);
+            info!("message received: {:?}", s);
         }
         Err(e) => {
             error!("sender dropped: {}", e);
