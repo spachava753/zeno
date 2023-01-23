@@ -113,7 +113,7 @@ mod tests {
     use nanoid::nanoid;
     use url::Url;
 
-    use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Document, Timestamp};
+    use crate::doc::{DocBody, DocDescription, DocId, DocTitle, DocType, Document, Timestamp};
     use crate::searcher::engine::SearchEngine;
 
     #[test]
@@ -122,7 +122,7 @@ mod tests {
         println!("creating tantivy index in {dir:?}");
         let mut searcher = SearchEngine::new(dir.path())?;
         let doc = Document::builder()
-            .id(nanoid!())
+            .id(DocId::new(nanoid!())?)
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("Neural Network From Scratch".to_string())?)
             .body(Some(DocBody::new(

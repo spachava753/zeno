@@ -7,6 +7,29 @@ use typed_builder::TypedBuilder;
 use url::Url;
 
 #[derive(Clone, Debug)]
+pub struct DocId {
+    id: String,
+}
+
+impl DocId {
+    pub fn new(id: String) -> Result<Self> {
+        if id.is_empty() {
+            return Err(eyre!("Id cannot be empty"));
+        }
+        Ok(Self { id })
+    }
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+}
+
+impl Display for DocId {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}", self.id)
+    }
+}
+
+#[derive(Clone, Debug)]
 pub struct DocTitle {
     title: String,
 }
@@ -117,7 +140,7 @@ impl TryFrom<Timestamp> for i64 {
 
 #[derive(TypedBuilder, Debug)]
 pub struct Document {
-    id: String,
+    id: DocId,
     url: Url,
     title: DocTitle,
     body: Option<DocBody>,
@@ -127,7 +150,7 @@ pub struct Document {
 }
 
 impl Document {
-    pub fn id(&self) -> &str {
+    pub fn id(&self) -> &DocId {
         &self.id
     }
     pub fn url(&self) -> &Url {
@@ -190,7 +213,7 @@ mod tests {
     fn doc_builder_test() -> Result<()> {
         color_eyre::install()?;
         let _ = Document::builder()
-            .id(nanoid!())
+            .id(DocId::new(nanoid!())?)
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("test".to_string())?)
             .body(None)
