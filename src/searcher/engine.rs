@@ -1,3 +1,4 @@
+use color_eyre::eyre::{Context, ContextCompat};
 use std::path::Path;
 
 use tantivy::collector::TopDocs;
@@ -6,7 +7,7 @@ use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, INDEXED, STORED, TEXT};
 use tantivy::{DateTime, Document as TantivyDocument, Index, IndexReader, IndexWriter};
 
-use crate::doc::Document;
+use crate::doc::{DocId, Document};
 
 pub struct SearchEngine {
     writer: IndexWriter,
@@ -78,11 +79,7 @@ impl SearchEngine {
         Ok(())
     }
 
-    pub fn search(
-        &self,
-        query_str: &str,
-        limit: usize,
-    ) -> color_eyre::Result<Vec<TantivyDocument>> {
+    pub fn search(&self, query_str: &str, limit: usize) -> color_eyre::Result<Vec<DocId>> {
         let query_parser = QueryParser::for_index(
             &self.index,
             vec![
@@ -101,7 +98,16 @@ impl SearchEngine {
         let mut results = Vec::with_capacity(top_docs.len());
         for (_score, doc_address) in top_docs {
             // Retrieve the actual content of documents given its `doc_address`.
-            results.push(searcher.doc(doc_address)?);
+            let retrieved_doc = searcher
+                .doc(doc_address)
+                .wrap_err("unable to retrieve doc using doc address")?;
+            let value = retrieved_doc
+                .get_first(self.id_field)
+                .wrap_err("could not retrieve id field from doc")?;
+            let text = value
+                .as_text()
+                .wrap_err("could not convert field to text")?;
+            results.push(DocId::new(text.to_string())?);
         }
 
         Ok(results)
