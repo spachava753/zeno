@@ -6,7 +6,7 @@ use color_eyre::Result;
 use typed_builder::TypedBuilder;
 use url::Url;
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DocTitle {
     title: String,
 }
@@ -29,7 +29,7 @@ impl DocTitle {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DocBody {
     body: String,
 }
@@ -53,7 +53,7 @@ impl DocBody {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct DocDescription {
     description: String,
 }
@@ -76,7 +76,7 @@ impl DocDescription {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub enum DocType {
     Pdf,
     Html,
@@ -95,7 +95,7 @@ impl Display for DocType {
     }
 }
 
-#[derive(Clone)]
+#[derive(Clone, Debug)]
 pub struct Timestamp(u128);
 
 impl Timestamp {
@@ -115,8 +115,9 @@ impl TryFrom<Timestamp> for i64 {
     }
 }
 
-#[derive(TypedBuilder)]
+#[derive(TypedBuilder, Debug)]
 pub struct Document {
+    id: String,
     url: Url,
     title: DocTitle,
     body: Option<DocBody>,
@@ -126,6 +127,40 @@ pub struct Document {
 }
 
 impl Document {
+    pub fn id(&self) -> &str {
+        &self.id
+    }
+    pub fn url(&self) -> &Url {
+        &self.url
+    }
+    pub fn title(&self) -> &DocTitle {
+        &self.title
+    }
+    pub fn body(&self) -> Option<&DocBody> {
+        self.body.as_ref()
+    }
+    pub fn description(&self) -> Option<&DocDescription> {
+        self.description.as_ref()
+    }
+    pub fn doc_type(&self) -> DocType {
+        self.doc_type.clone()
+    }
+    pub fn parsed_date(&self) -> Timestamp {
+        self.parsed_date.clone()
+    }
+}
+
+#[derive(TypedBuilder, Debug)]
+pub struct CreateDocument {
+    url: Url,
+    title: DocTitle,
+    body: Option<DocBody>,
+    description: Option<DocDescription>,
+    doc_type: DocType,
+    parsed_date: Timestamp,
+}
+
+impl CreateDocument {
     pub fn url(&self) -> &Url {
         &self.url
     }
@@ -149,11 +184,13 @@ impl Document {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use nanoid::nanoid;
 
     #[test]
     fn doc_builder_test() -> Result<()> {
         color_eyre::install()?;
         let _ = Document::builder()
+            .id(nanoid!())
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("test".to_string())?)
             .body(None)

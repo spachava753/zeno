@@ -11,6 +11,7 @@ pub struct SearchEngine {
     writer: IndexWriter,
     reader: IndexReader,
     index: Index,
+    id_field: Field,
     url_field: Field,
     title_field: Field,
     body_field: Field,
@@ -19,6 +20,7 @@ pub struct SearchEngine {
 }
 
 impl SearchEngine {
+    const ID_FIELD: &'static str = "id";
     const URL_FIELD: &'static str = "url";
     const TITLE_FIELD: &'static str = "title";
     const BODY_FIELD: &'static str = "body";
@@ -27,8 +29,9 @@ impl SearchEngine {
     pub fn new<P: AsRef<Path>>(index_dir: P) -> color_eyre::Result<Self> {
         // create schema
         let mut schema_builder = Schema::builder();
-        let url_field = schema_builder.add_text_field(Self::URL_FIELD, TEXT | STORED);
-        let title_field = schema_builder.add_text_field(Self::TITLE_FIELD, TEXT | STORED);
+        let id_field = schema_builder.add_text_field(Self::ID_FIELD, TEXT | STORED);
+        let url_field = schema_builder.add_text_field(Self::URL_FIELD, TEXT);
+        let title_field = schema_builder.add_text_field(Self::TITLE_FIELD, TEXT);
         let body_field = schema_builder.add_text_field(Self::BODY_FIELD, TEXT);
         let description_field = schema_builder.add_text_field(Self::DESCRIPTION_FIELD, TEXT);
         let parsed_time_field = schema_builder.add_date_field(Self::PARSED_TIME_FIELD, INDEXED);
@@ -42,6 +45,7 @@ impl SearchEngine {
             index,
             writer: index_writer,
             reader,
+            id_field,
             url_field,
             title_field,
             body_field,
@@ -52,7 +56,8 @@ impl SearchEngine {
 
     pub fn add_doc(&mut self, document: Document) -> color_eyre::Result<()> {
         let mut doc = TantivyDocument::new();
-        doc.add_text(self.url_field, document.url().path());
+        doc.add_text(self.id_field, document.id());
+        doc.add_text(self.url_field, document.url());
         doc.add_text(self.title_field, document.title());
         if let Some(body) = document.body() {
             doc.add_text(self.body_field, body);
@@ -102,6 +107,7 @@ impl SearchEngine {
 
 #[cfg(test)]
 mod tests {
+    use nanoid::nanoid;
     use url::Url;
 
     use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Document, Timestamp};
@@ -113,6 +119,7 @@ mod tests {
         println!("creating tantivy index in {dir:?}");
         let mut searcher = SearchEngine::new(dir.path())?;
         let doc = Document::builder()
+            .id(nanoid!())
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("Neural Network From Scratch".to_string())?)
             .body(Some(DocBody::new(
