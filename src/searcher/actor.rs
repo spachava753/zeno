@@ -33,4 +33,5 @@ async fn searcher_actor(mut rx: mpsc::Receiver<SearchEngineMsg>) {
             }
         }
     }
+    info!("search actor finished running");
 }

@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn doc_builder_test() -> Result<()> {
         color_eyre::install()?;
-        let d = Document::builder()
+        let _ = Document::builder()
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("test".to_string())?)
             .body(None)

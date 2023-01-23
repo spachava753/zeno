@@ -1,9 +1,11 @@
-use crate::doc::Document;
 use std::path::Path;
+
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, INDEXED, STORED, TEXT};
 use tantivy::{DateTime, Document as TantivyDocument, Index, IndexReader, IndexWriter};
+
+use crate::doc::Document;
 
 pub struct SearchEngine {
     writer: IndexWriter,
@@ -33,12 +35,9 @@ impl SearchEngine {
         let schema = schema_builder.build();
 
         // create index
-        let index = Index::builder()
-            .schema(schema.clone())
-            .create_in_dir(index_dir)?;
-        let index_writer = index.writer(100_000_000)?;
+        let index = Index::builder().schema(schema).create_in_dir(index_dir)?;
+        let index_writer = index.writer_with_num_threads(1, 100_000_000)?;
         let reader = index.reader()?;
-
         Ok(SearchEngine {
             index,
             writer: index_writer,
@@ -106,7 +105,6 @@ mod tests {
     use url::Url;
 
     use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Document, Timestamp};
-
     use crate::searcher::engine::SearchEngine;
 
     #[test]

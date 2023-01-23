@@ -2,7 +2,6 @@ extern crate core;
 
 use std::net::SocketAddr;
 
-use crate::searcher::actor::SearchEngineMsg;
 use axum::extract::State;
 use axum::{
     http::StatusCode,
@@ -10,13 +9,15 @@ use axum::{
     routing::{get, post},
     Json, Router,
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use tokio::signal;
 use tokio::sync::mpsc::Sender;
 use tokio::sync::oneshot;
-use tokio::sync::oneshot::error::{RecvError, TryRecvError};
 use tower::ServiceBuilder;
 use tower_http::trace::{DefaultOnRequest, DefaultOnResponse, TraceLayer};
 use tracing::*;
+
+use crate::searcher::actor::SearchEngineMsg;
 
 mod doc;
 mod pdf;
@@ -25,6 +26,11 @@ mod searcher;
 #[derive(Debug, Clone)]
 struct AppState {
     tx: Sender<SearchEngineMsg>,
+}
+
+pub enum ProcessState {
+    Running,
+    Shutdown,
 }
 
 #[tokio::main]
@@ -37,14 +43,14 @@ async fn main() {
         .with_max_level(Level::INFO)
         .init();
 
-    let (handle, tx) = searcher::actor::start_actor();
+    let (search_engine_handle, tx) = searcher::actor::start_actor();
 
     // build our application with a route
     let app = Router::new()
         .route("/", get(root))
         .route("/scrape", post(index_doc))
         .route("/search", post(search_docs))
-        .with_state(AppState { tx })
+        .with_state(AppState { tx: tx.clone() })
         .layer(
             ServiceBuilder::new().layer(
                 TraceLayer::new_for_http()
@@ -57,12 +63,51 @@ async fn main() {
     // `axum::Server` is a re-export of `hyper::Server`
     let addr = SocketAddr::from(([127, 0, 0, 1], 3000));
     info!("listening on {}", addr);
-    axum::Server::bind(&addr)
-        .serve(app.into_make_service())
-        .await
-        .unwrap();
+    let axum_handle = tokio::spawn(
+        axum::Server::bind(&addr)
+            .serve(app.into_make_service())
+            .with_graceful_shutdown(shutdown_signal()),
+    );
 
-    handle.await.expect("error awaiting handle");
+    // wait for server to shutdown
+    if let Err(e) = axum_handle.await {
+        error!("error from server task: {}", e);
+    }
+
+    // drop transmitter, should exit the actor
+    drop(tx);
+
+    if let Err(e) = search_engine_handle.await {
+        error!("error from search engine task: {}", e);
+    }
+
+    info!("app shut down")
+}
+
+async fn shutdown_signal() {
+    let ctrl_c = async {
+        signal::ctrl_c()
+            .await
+            .expect("failed to install Ctrl+C handler");
+    };
+
+    #[cfg(unix)]
+    let terminate = async {
+        signal::unix::signal(signal::unix::SignalKind::terminate())
+            .expect("failed to install signal handler")
+            .recv()
+            .await;
+    };
+
+    #[cfg(not(unix))]
+    let terminate = std::future::pending::<()>();
+
+    tokio::select! {
+        _ = ctrl_c => {},
+        _ = terminate => {},
+    }
+
+    info!("signal received, starting graceful shutdown");
 }
 
 // basic handler that responds with a static string
@@ -94,7 +139,7 @@ async fn index_doc(
     }
     // this will be converted into a JSON response
     // with a status code of `201 Created`
-    (StatusCode::OK)
+    StatusCode::OK
 }
 
 #[instrument]
@@ -116,7 +161,7 @@ async fn search_docs(
             error!("sender dropped: {}", e);
         }
     }
-    (StatusCode::OK)
+    StatusCode::OK
 }
 
 // the input to our `create_user` handler
