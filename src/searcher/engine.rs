@@ -1,14 +1,11 @@
+use crate::doc::Document;
 use std::path::Path;
-
-use color_eyre::Result;
 use tantivy::collector::TopDocs;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, INDEXED, STORED, TEXT};
 use tantivy::{DateTime, Document as TantivyDocument, Index, IndexReader, IndexWriter};
 
-use crate::doc::{Document, Timestamp};
-
-pub struct Searcher {
+pub struct SearchEngine {
     writer: IndexWriter,
     reader: IndexReader,
     index: Index,
@@ -19,13 +16,13 @@ pub struct Searcher {
     parsed_time_field: Field,
 }
 
-impl Searcher {
+impl SearchEngine {
     const URL_FIELD: &'static str = "url";
     const TITLE_FIELD: &'static str = "title";
     const BODY_FIELD: &'static str = "body";
     const DESCRIPTION_FIELD: &'static str = "description";
     const PARSED_TIME_FIELD: &'static str = "parsed";
-    pub fn new<P: AsRef<Path>>(index_dir: P) -> Result<Self> {
+    pub fn new<P: AsRef<Path>>(index_dir: P) -> color_eyre::Result<Self> {
         // create schema
         let mut schema_builder = Schema::builder();
         let url_field = schema_builder.add_text_field(Self::URL_FIELD, TEXT | STORED);
@@ -42,7 +39,7 @@ impl Searcher {
         let index_writer = index.writer(100_000_000)?;
         let reader = index.reader()?;
 
-        Ok(Searcher {
+        Ok(SearchEngine {
             index,
             writer: index_writer,
             reader,
@@ -54,7 +51,7 @@ impl Searcher {
         })
     }
 
-    pub fn add_doc(&mut self, document: Document) -> Result<()> {
+    pub fn add_doc(&mut self, document: Document) -> color_eyre::Result<()> {
         let mut doc = TantivyDocument::new();
         doc.add_text(self.url_field, document.url().path());
         doc.add_text(self.title_field, document.title());
@@ -74,7 +71,11 @@ impl Searcher {
         Ok(())
     }
 
-    pub fn search(&self, query_str: &str, limit: usize) -> Result<Vec<TantivyDocument>> {
+    pub fn search(
+        &self,
+        query_str: &str,
+        limit: usize,
+    ) -> color_eyre::Result<Vec<TantivyDocument>> {
         let query_parser = QueryParser::for_index(
             &self.index,
             vec![
@@ -104,20 +105,20 @@ impl Searcher {
 mod tests {
     use url::Url;
 
-    use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Timestamp};
+    use crate::doc::{DocBody, DocDescription, DocTitle, DocType, Document, Timestamp};
 
-    use super::*;
+    use crate::searcher::engine::SearchEngine;
 
     #[test]
-    fn tantivy_test() -> Result<()> {
+    fn tantivy_test() -> color_eyre::Result<()> {
         let dir = tempdir::TempDir::new("tantivy-test")?;
         println!("creating tantivy index in {dir:?}");
-        let mut searcher = Searcher::new(dir.path())?;
+        let mut searcher = SearchEngine::new(dir.path())?;
         let doc = Document::builder()
             .url(Url::parse("https://sirupsen.com/index-merges")?)
             .title(DocTitle::new("Neural Network From Scratch".to_string())?)
             .body(Some(DocBody::new(
-                include_str!("../testdata/neural-net.html").to_string(),
+                include_str!("../../testdata/neural-net.html").to_string(),
             )?))
             .description(Some(DocDescription::new(
                 "Article about writing a neural net from scratch".to_string(),
