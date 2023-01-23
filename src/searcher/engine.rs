@@ -1,6 +1,7 @@
 use std::path::Path;
 
 use tantivy::collector::TopDocs;
+use tantivy::directory::MmapDirectory;
 use tantivy::query::QueryParser;
 use tantivy::schema::{Field, Schema, INDEXED, STORED, TEXT};
 use tantivy::{DateTime, Document as TantivyDocument, Index, IndexReader, IndexWriter};
@@ -38,7 +39,9 @@ impl SearchEngine {
         let schema = schema_builder.build();
 
         // create index
-        let index = Index::builder().schema(schema).create_in_dir(index_dir)?;
+        let index = Index::builder()
+            .schema(schema)
+            .open_or_create(MmapDirectory::open(index_dir)?)?;
         let index_writer = index.writer_with_num_threads(1, 100_000_000)?;
         let reader = index.reader()?;
         Ok(SearchEngine {
